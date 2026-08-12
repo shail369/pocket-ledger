@@ -1,5 +1,4 @@
 import "./styles.css";
-import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { RouterProvider } from "@tanstack/react-router";
 import { getRouter } from "./router";
@@ -11,8 +10,4 @@ if (!rootElement) {
   throw new Error("Pocket Ledger mobile root element was not found.");
 }
 
-createRoot(rootElement).render(
-  <StrictMode>
-    <RouterProvider router={router} />
-  </StrictMode>,
-);
+createRoot(rootElement).render(<RouterProvider router={router} />);

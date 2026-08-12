@@ -173,6 +173,7 @@ function RecurringForm({
         category_id: category || null,
         frequency,
         next_occurrence: next,
+        ...(existing ? {} : { start_date: next }),
         is_active: active,
       });
       toast.success(existing ? "Updated" : "Recurring added");

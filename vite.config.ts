@@ -9,7 +9,20 @@ import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 export default defineConfig({
   tanstackStart: {
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
-    // nitro/vite builds from this
+    // nitro/vite builds from this.
     server: { entry: "server" },
+
+    // Pocket Ledger is a client-side application backed directly by Supabase.
+    // SPA mode gives Capacitor a static application shell while keeping TanStack Router
+    // for client-side navigation.
+    spa: {
+      enabled: true,
+      prerender: {
+        // Capacitor needs a conventional static entry file.
+        outputPath: "/index.html",
+        crawlLinks: false,
+        retryCount: 1,
+      },
+    },
   },
 });

@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { format, parseISO } from "date-fns";
 import { CalendarClock } from "lucide-react";
-import { AccountSelector, PeriodSelector } from "@/components/app/selectors";
+import { PeriodSelector } from "@/components/app/selectors";
 import { CategoryBreakdown } from "@/components/app/category-breakdown";
 import { SpendingAreaChart } from "@/components/app/charts";
 import { EmptyState, Section, StatCard } from "@/components/app/pieces";
@@ -30,7 +30,7 @@ function Dashboard() {
 
   return (
     <div className="space-y-4">
-      <header className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2"><div className="min-w-0"><p className="text-xs text-muted-foreground">Overview</p><AccountSelector /></div><PeriodSelector /></header>
+      <header className="flex items-center justify-between gap-2"><p className="text-xs text-muted-foreground">Overview</p><PeriodSelector /></header>
       <div className="rounded-3xl bg-primary p-4 text-primary-foreground shadow-sm"><p className="text-xs opacity-80">Total balance</p><p className="tabular text-2xl font-extrabold">{formatMoney(balance, currency)}</p><p className="mt-1 text-[11px] opacity-80">{range.label}</p></div>
       <div className="grid grid-cols-3 gap-2"><StatCard label="Income" value={formatMoney(t.income, currency, true)} tone="income" /><StatCard label="Expenses" value={formatMoney(t.expenses, currency, true)} tone="expense" /><StatCard label="Savings" value={formatMoney(t.savings, currency, true)} tone="primary" hint={`${t.savingsRate.toFixed(0)}% rate`} /></div>
       <Section title="Spending overview" action={<span className="text-[11px] text-muted-foreground">{range.label}</span>}>{isLoading ? <EmptyState text="Loading…" /> : <SpendingAreaChart data={series} />}</Section>

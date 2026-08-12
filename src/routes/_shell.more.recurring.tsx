@@ -36,7 +36,7 @@ function RecurringPage() {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Recurring | null>(null);
 
-  const items = [...data.recurring].sort((a, b) => (a.next_date < b.next_date ? -1 : 1));
+  const items = [...data.recurring].sort((a, b) => (a.next_occurrence < b.next_occurrence ? -1 : 1));
   const monthlyTotal = items
     .filter((r) => r.is_active && r.type === "expense")
     .reduce((a, r) => {
@@ -91,7 +91,7 @@ function RecurringPage() {
                   >
                     <p className="truncate text-sm font-semibold">{r.description}</p>
                     <p className="truncate text-[11px] capitalize text-muted-foreground">
-                      {r.frequency} · next {format(parseISO(r.next_date), "d MMM")} · {account?.name ?? "—"}
+                      {r.frequency} · next {format(parseISO(r.next_occurrence), "d MMM")} · {account?.name ?? "—"}
                     </p>
                   </button>
                   <span className="flex shrink-0 items-center gap-2">
@@ -152,11 +152,11 @@ function RecurringForm({
     setAccount(existing?.account_id ?? data.accounts[0]?.id ?? "");
     setCategory(existing?.category_id ?? "");
     setFrequency(existing?.frequency ?? "monthly");
-    setNext(existing?.next_date ?? iso(new Date()));
+    setNext(existing?.next_occurrence ?? iso(new Date()));
     setActive(existing?.is_active ?? true);
   }, [open, existing, data.accounts]);
 
-  const categories = data.categories.filter((c) => c.type === type);
+  const categories = data.categories.filter((c) => c.kind === type);
 
   const submit = async () => {
     if (!description.trim() || !amount || !account) {
@@ -172,7 +172,7 @@ function RecurringForm({
         account_id: account,
         category_id: category || null,
         frequency,
-        next_date: next,
+        next_occurrence: next,
         is_active: active,
       });
       toast.success(existing ? "Updated" : "Recurring added");

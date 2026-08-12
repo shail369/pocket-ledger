@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ChevronLeft, Plus, Trash2 } from "lucide-react";
+import { ChevronLeft, Plus, Trash2, WalletCards } from "lucide-react";
 import { toast } from "sonner";
 import { EmptyState, Section } from "@/components/app/pieces";
 import { AppIcon } from "@/components/app/icon";
@@ -20,16 +20,16 @@ export const Route = createFileRoute("/_shell/more/budgets")({
   head: () => ({
     meta: [
       { title: "Budgets — Paisa Expense Manager" },
-      { name: "description", content: "Set weekly and monthly spending limits by category and track progress." },
+      { name: "description", content: "Set account-specific weekly and monthly spending limits by category." },
       { property: "og:title", content: "Budgets — Paisa Expense Manager" },
-      { property: "og:description", content: "Set weekly and monthly spending limits by category and track progress." },
+      { property: "og:description", content: "Set account-specific weekly and monthly spending limits by category." },
     ],
   }),
   component: BudgetsPage,
 });
 
 const OVERALL = "__overall__";
-const ANY_ACCOUNT = "__any__";
+const ALL_ACCOUNTS = "__all_accounts__";
 
 function BudgetsPage() {
   const { data } = useAppData();
@@ -37,13 +37,14 @@ function BudgetsPage() {
   const remove = useRemove("budgets");
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Budget | null>(null);
-
   const progress = budgetProgress(data.budgets, data.transactions, data.categories, accountId);
+
+  const displayedAccount = accountId === "all" ? "All accounts" : data.accounts.find((a) => a.id === accountId)?.name ?? "Account";
 
   return (
     <div className="space-y-4">
       <header className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2">
-        <Link to="/more" className="grid size-9 place-items-center rounded-full bg-secondary">
+        <Link to="/" className="grid size-9 place-items-center rounded-full bg-secondary">
           <ChevronLeft className="size-5" />
         </Link>
         <h1 className="truncate text-lg font-extrabold">Budgets</h1>
@@ -59,9 +60,21 @@ function BudgetsPage() {
         </button>
       </header>
 
+      <Section>
+        <div className="flex items-center gap-3 rounded-2xl bg-secondary/70 px-3 py-2.5">
+          <span className="grid size-9 place-items-center rounded-xl bg-background">
+            <WalletCards className="size-4" />
+          </span>
+          <div className="min-w-0">
+            <p className="text-[11px] text-muted-foreground">Budget account view</p>
+            <p className="truncate text-sm font-bold">{displayedAccount}</p>
+          </div>
+        </div>
+      </Section>
+
       {progress.length ? (
         progress.map((b) => (
-          <Section key={b.budget.id}>
+          <Section key={`${b.budget.id}-${b.budget.category_id ?? "overall"}-${b.budget.period}`}>
             <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3">
               <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-secondary">
                 <AppIcon name={b.icon} className="size-4" />
@@ -69,17 +82,21 @@ function BudgetsPage() {
               <button
                 className="min-w-0 text-left"
                 onClick={() => {
-                  setEditing(b.budget);
+                  setEditing(accountId === "all" ? null : b.budget);
                   setOpen(true);
                 }}
               >
                 <p className="truncate text-sm font-bold">{b.categoryName}</p>
                 <p className="text-[11px] capitalize text-muted-foreground">
-                  {b.budget.period} · {b.rangeLabel}
+                  {b.budget.period} · {b.rangeLabel} · {accountId === "all" ? "Combined" : "Selected account"}
                 </p>
               </button>
               <button
                 onClick={async () => {
+                  if (accountId === "all") {
+                    toast.error("Select an account before deleting a budget");
+                    return;
+                  }
                   if (!confirm("Delete this budget?")) return;
                   await remove.mutateAsync(b.budget.id);
                   toast.success("Budget deleted");
@@ -108,11 +125,16 @@ function BudgetsPage() {
         ))
       ) : (
         <Section>
-          <EmptyState text="No budgets yet. Tap + to create one." />
+          <EmptyState text={accountId === "all" ? "No account-specific budgets yet. Select an account to create one." : "No budgets yet. Tap + to create one."} />
         </Section>
       )}
 
-      <BudgetForm open={open} onOpenChange={setOpen} existing={editing} />
+      <BudgetForm
+        open={open}
+        onOpenChange={setOpen}
+        existing={editing}
+        selectedAccountId={accountId}
+      />
     </div>
   );
 }
@@ -121,29 +143,35 @@ function BudgetForm({
   open,
   onOpenChange,
   existing,
+  selectedAccountId,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   existing?: Budget | null;
+  selectedAccountId: string;
 }) {
   const { data } = useAppData();
   const upsert = useUpsert("budgets");
   const [category, setCategory] = useState(OVERALL);
-  const [account, setAccount] = useState(ANY_ACCOUNT);
+  const [account, setAccount] = useState("");
   const [amount, setAmount] = useState("");
   const [period, setPeriod] = useState("monthly");
 
   useEffect(() => {
     if (!open) return;
     setCategory(existing?.category_id ?? OVERALL);
-    setAccount(existing?.account_id ?? ANY_ACCOUNT);
+    setAccount(existing?.account_id ?? (selectedAccountId === "all" ? "" : selectedAccountId));
     setAmount(existing ? String(existing.amount) : "");
     setPeriod(existing?.period ?? "monthly");
-  }, [open, existing]);
+  }, [open, existing, selectedAccountId]);
 
   const parents = data.categories.filter((c) => !c.parent_id);
 
   const submit = async () => {
+    if (!account) {
+      toast.error("Select an account for this budget");
+      return;
+    }
     if (!amount || Number(amount) <= 0) {
       toast.error("Enter a budget amount");
       return;
@@ -152,7 +180,7 @@ function BudgetForm({
       await upsert.mutateAsync({
         ...(existing ? { id: existing.id } : {}),
         category_id: category === OVERALL ? null : category,
-        account_id: account === ANY_ACCOUNT ? null : account,
+        account_id: account,
         amount: Number(amount).toFixed(2),
         period,
       });
@@ -171,6 +199,21 @@ function BudgetForm({
         </SheetHeader>
         <div className="space-y-4 px-4 pb-8">
           <div className="space-y-1.5">
+            <Label className="text-xs">Account</Label>
+            <Select value={account} onValueChange={setAccount}>
+              <SelectTrigger className="h-12 w-full rounded-xl">
+                <SelectValue placeholder="Select account" />
+              </SelectTrigger>
+              <SelectContent>
+                {data.accounts.map((a) => (
+                  <SelectItem key={a.id} value={a.id}>
+                    {a.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
             <Label className="text-xs">Category</Label>
             <Select value={category} onValueChange={setCategory}>
               <SelectTrigger className="h-12 w-full rounded-xl">
@@ -181,22 +224,6 @@ function BudgetForm({
                 {parents.map((c) => (
                   <SelectItem key={c.id} value={c.id}>
                     {c.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs">Account</Label>
-            <Select value={account} onValueChange={setAccount}>
-              <SelectTrigger className="h-12 w-full rounded-xl">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={ANY_ACCOUNT}>All accounts</SelectItem>
-                {data.accounts.map((a) => (
-                  <SelectItem key={a.id} value={a.id}>
-                    {a.name}
                   </SelectItem>
                 ))}
               </SelectContent>

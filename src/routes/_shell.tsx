@@ -1,6 +1,6 @@
 import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { LayoutGrid, Wallet, ArrowLeftRight, PieChart, Menu, Plus } from "lucide-react";
+import { LayoutGrid, ArrowLeftRight, PieChart, Menu, Plus } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { useAppData, useInvalidateData } from "@/lib/data";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,7 +12,6 @@ export const Route = createFileRoute("/_shell")({
 
 const NAV = [
   { to: "/", label: "Home", icon: LayoutGrid },
-  { to: "/accounts", label: "Accounts", icon: Wallet },
   { to: "/transactions", label: "Activity", icon: ArrowLeftRight },
   { to: "/insights", label: "Insights", icon: PieChart },
   { to: "/more", label: "More", icon: Menu },
@@ -62,7 +61,7 @@ function ShellLayout() {
       </button>
 
       <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-card/95 backdrop-blur">
-        <div className="mx-auto grid max-w-md grid-cols-5 px-2 pb-[max(env(safe-area-inset-bottom),8px)] pt-2">
+        <div className="mx-auto grid max-w-md grid-cols-4 px-2 pb-[max(env(safe-area-inset-bottom),8px)] pt-2">
           {NAV.map((item) => {
             const active = item.to === "/" ? pathname === "/" : pathname.startsWith(item.to);
             return (

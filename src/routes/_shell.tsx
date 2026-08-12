@@ -39,6 +39,7 @@ function ShellLayout() {
       } else if (data.transactions.some((t) => t.description.startsWith("[Demo]"))) {
         await supabase.rpc("expand_demo_data");
       }
+      await supabase.rpc("seed_demo_budgets");
       invalidate();
     })();
   }, [session, isLoading, data.accounts.length, data.transactions, invalidate]);

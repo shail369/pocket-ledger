@@ -4,17 +4,12 @@ import { toast } from "sonner";
 import { Wallet } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
       { title: "Sign in — Paisa Expense Manager" },
       { name: "description", content: "Sign in to track your expenses, budgets and savings on Paisa." },
-      { property: "og:title", content: "Sign in — Paisa Expense Manager" },
-      { property: "og:description", content: "Sign in to track your expenses, budgets and insights on Paisa." },
     ],
   }),
   component: AuthPage,
@@ -33,11 +28,12 @@ function AuthPage() {
     if (session) void navigate({ to: "/" });
   }, [session, navigate]);
 
-  const submit = async () => {
+  const submit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
     const email = emailRef.current?.value.trim() ?? "";
     const password = passwordRef.current?.value ?? "";
     const name = nameRef.current?.value.trim() ?? "";
-    if (!email || !password) return;
+    if (!email || !password || busy) return;
 
     setBusy(true);
     try {
@@ -60,6 +56,9 @@ function AuthPage() {
     }
   };
 
+  const inputClass =
+    "box-border block h-12 w-full appearance-none rounded-xl border border-input bg-background px-3 text-base text-foreground shadow-sm outline-none placeholder:text-muted-foreground focus:border-ring focus:ring-1 focus:ring-ring";
+
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col justify-center gap-6 px-6 py-10">
       <div className="space-y-2 text-center">
@@ -72,57 +71,58 @@ function AuthPage() {
         </p>
       </div>
 
-      <div className="space-y-4 rounded-3xl bg-card p-5 shadow-sm ring-1 ring-border/60">
+      <form onSubmit={submit} className="space-y-4 rounded-3xl bg-card p-5 shadow-sm ring-1 ring-border/60">
         <div className="grid grid-cols-2 gap-1 rounded-2xl bg-secondary p-1">
-          {(["signin", "signup"] as const).map((m) => (
-            <button
-              key={m}
-              type="button"
-              onClick={() => setMode(m)}
-              className={`h-10 rounded-xl text-sm font-semibold ${
-                mode === m ? "bg-card shadow-sm" : "text-muted-foreground"
-              }`}
-            >
-              {m === "signin" ? "Sign in" : "Create account"}
-            </button>
-          ))}
+          <button
+            type="button"
+            onClick={() => setMode("signin")}
+            className={`h-10 rounded-xl text-sm font-semibold ${mode === "signin" ? "bg-card shadow-sm" : "text-muted-foreground"}`}
+          >
+            Sign in
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode("signup")}
+            className={`h-10 rounded-xl text-sm font-semibold ${mode === "signup" ? "bg-card shadow-sm" : "text-muted-foreground"}`}
+          >
+            Create account
+          </button>
         </div>
+
         {mode === "signup" && (
-          <div className="space-y-1.5">
-            <Label className="text-xs">Name</Label>
-            <Input ref={nameRef} autoComplete="name" className="h-12 rounded-xl text-base" />
-          </div>
+          <label className="block space-y-1.5">
+            <span className="text-xs font-medium">Name</span>
+            <input ref={nameRef} autoComplete="name" className={inputClass} />
+          </label>
         )}
-        <div className="space-y-1.5">
-          <Label className="text-xs">Email</Label>
-          <Input
-            ref={emailRef}
-            type="email"
-            inputMode="email"
-            autoComplete="email"
-            className="h-12 rounded-xl text-base"
-          />
-        </div>
-        <div className="space-y-1.5">
-          <Label className="text-xs">Password</Label>
-          <Input
+
+        <label className="block space-y-1.5">
+          <span className="text-xs font-medium">Email</span>
+          <input ref={emailRef} type="email" inputMode="email" autoComplete="email" className={inputClass} />
+        </label>
+
+        <label className="block space-y-1.5">
+          <span className="text-xs font-medium">Password</span>
+          <input
             ref={passwordRef}
             type="password"
             autoComplete={mode === "signup" ? "new-password" : "current-password"}
-            className="h-12 rounded-xl text-base"
+            className={inputClass}
           />
-        </div>
-        <Button
-          className="h-12 w-full rounded-xl text-base"
-          onClick={submit}
+        </label>
+
+        <button
+          type="submit"
           disabled={busy}
+          className="h-12 w-full rounded-xl bg-primary px-4 text-base font-semibold text-primary-foreground disabled:pointer-events-none disabled:opacity-50"
         >
           {mode === "signin" ? "Sign in" : "Create account"}
-        </Button>
+        </button>
+
         <p className="text-center text-[11px] text-muted-foreground">
           New accounts start with clearly marked demo data so you can explore every feature.
         </p>
-      </div>
+      </form>
     </main>
   );
 }

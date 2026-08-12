@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { format, parseISO } from "date-fns";
-import { Search, SlidersHorizontal, X } from "lucide-react";
+import { Search, SlidersHorizontal, X, WalletCards } from "lucide-react";
 import { EmptyState, ScreenHeader, Section, TransactionRow } from "@/components/app/pieces";
 import { TransactionForm } from "@/components/app/transaction-form";
 import { Input } from "@/components/ui/input";
@@ -45,6 +45,7 @@ function TransactionsPage() {
 
   const parents = data.categories.filter((c) => !c.parent_id);
   const subs = data.categories.filter((c) => c.parent_id === parent);
+  const selectedAccount = data.accounts.find((a) => a.id === account);
 
   const filtered = useMemo(() => {
     const childIds = new Set(data.categories.filter((c) => c.parent_id === parent).map((c) => c.id));
@@ -77,10 +78,9 @@ function TransactionsPage() {
   }, [filtered]);
 
   const activeFilters =
-    [account, type, parent, sub].filter((v) => v !== ALL).length + [from, to, min, max].filter(Boolean).length;
+    [type, parent, sub].filter((v) => v !== ALL).length + [from, to, min, max].filter(Boolean).length;
 
   const reset = () => {
-    setAccount(ALL);
     setType(ALL);
     setParent(ALL);
     setSub(ALL);
@@ -97,7 +97,31 @@ function TransactionsPage() {
 
   return (
     <div className="space-y-4">
-      <ScreenHeader title="Transactions" subtitle={`${filtered.length} results · net ${formatMoney(totalShown, currency)}`} />
+      <ScreenHeader
+        title="Transactions"
+        subtitle={`${filtered.length} results · net ${formatMoney(totalShown, currency)}`}
+        right={
+          <Select value={account} onValueChange={setAccount}>
+            <SelectTrigger className="h-10 w-[150px] rounded-xl">
+              <WalletCards className="mr-1 size-4 shrink-0" />
+              <SelectValue placeholder="All accounts" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL}>All accounts</SelectItem>
+              {data.accounts.map((a) => (
+                <SelectItem key={a.id} value={a.id}>
+                  {a.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        }
+      />
+
+      <div className="flex items-center gap-2 rounded-2xl bg-secondary/70 px-3 py-2 text-xs text-muted-foreground">
+        <WalletCards className="size-3.5" />
+        <span>{selectedAccount ? `Showing ${selectedAccount.name}` : "Showing all accounts"}</span>
+      </div>
 
       <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
         <div className="relative min-w-0">
@@ -151,13 +175,6 @@ function TransactionsPage() {
             <SheetTitle>Filters</SheetTitle>
           </SheetHeader>
           <div className="space-y-4 px-4 pb-8">
-            <FilterSelect label="Account" value={account} onChange={setAccount}>
-              {data.accounts.map((a) => (
-                <SelectItem key={a.id} value={a.id}>
-                  {a.name}
-                </SelectItem>
-              ))}
-            </FilterSelect>
             <FilterSelect label="Type" value={type} onChange={setType}>
               {["expense", "income", "transfer"].map((t) => (
                 <SelectItem key={t} value={t} className="capitalize">

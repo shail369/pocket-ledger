@@ -19,6 +19,7 @@ import { Route as ShellAccountsAccountIdRouteImport } from './routes/_shell.acco
 import { Route as ShellMoreIndexRouteImport } from './routes/_shell.more.index'
 import { Route as ShellMoreBudgetsRouteImport } from './routes/_shell.more.budgets'
 import { Route as ShellMoreRecurringRouteImport } from './routes/_shell.more.recurring'
+import { Route as ShellMoreReportsRouteImport } from './routes/_shell.more.reports'
 
 const ShellRoute = ShellRouteImport.update({
   id: '/_shell',
@@ -69,6 +70,11 @@ const ShellMoreRecurringRoute = ShellMoreRecurringRouteImport.update({
   path: '/more/recurring',
   getParentRoute: () => ShellRoute,
 } as any)
+const ShellMoreReportsRoute = ShellMoreReportsRouteImport.update({
+  id: '/more/reports',
+  path: '/more/reports',
+  getParentRoute: () => ShellRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof ShellIndexRoute
@@ -78,6 +84,7 @@ export interface FileRoutesByFullPath {
   '/accounts/$accountId': typeof ShellAccountsAccountIdRoute
   '/more/budgets': typeof ShellMoreBudgetsRoute
   '/more/recurring': typeof ShellMoreRecurringRoute
+  '/more/reports': typeof ShellMoreReportsRoute
   '/accounts/': typeof ShellAccountsIndexRoute
   '/more/': typeof ShellMoreIndexRoute
 }
@@ -89,6 +96,7 @@ export interface FileRoutesByTo {
   '/accounts/$accountId': typeof ShellAccountsAccountIdRoute
   '/more/budgets': typeof ShellMoreBudgetsRoute
   '/more/recurring': typeof ShellMoreRecurringRoute
+  '/more/reports': typeof ShellMoreReportsRoute
   '/accounts': typeof ShellAccountsIndexRoute
   '/more': typeof ShellMoreIndexRoute
 }
@@ -102,6 +110,7 @@ export interface FileRoutesById {
   '/_shell/accounts/$accountId': typeof ShellAccountsAccountIdRoute
   '/_shell/more/budgets': typeof ShellMoreBudgetsRoute
   '/_shell/more/recurring': typeof ShellMoreRecurringRoute
+  '/_shell/more/reports': typeof ShellMoreReportsRoute
   '/_shell/accounts/': typeof ShellAccountsIndexRoute
   '/_shell/more/': typeof ShellMoreIndexRoute
 }
@@ -115,6 +124,7 @@ export interface FileRouteTypes {
     | '/accounts/$accountId'
     | '/more/budgets'
     | '/more/recurring'
+    | '/more/reports'
     | '/accounts/'
     | '/more/'
   fileRoutesByTo: FileRoutesByTo
@@ -126,6 +136,7 @@ export interface FileRouteTypes {
     | '/accounts/$accountId'
     | '/more/budgets'
     | '/more/recurring'
+    | '/more/reports'
     | '/accounts'
     | '/more'
   id:
@@ -138,6 +149,7 @@ export interface FileRouteTypes {
     | '/_shell/accounts/$accountId'
     | '/_shell/more/budgets'
     | '/_shell/more/recurring'
+    | '/_shell/more/reports'
     | '/_shell/accounts/'
     | '/_shell/more/'
   fileRoutesById: FileRoutesById
@@ -219,6 +231,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShellMoreRecurringRouteImport
       parentRoute: typeof ShellRoute
     }
+    '/_shell/more/reports': {
+      id: '/_shell/more/reports'
+      path: '/more/reports'
+      fullPath: '/more/reports'
+      preLoaderRoute: typeof ShellMoreReportsRouteImport
+      parentRoute: typeof ShellRoute
+    }
   }
 }
 
@@ -229,6 +248,7 @@ interface ShellRouteChildren {
   ShellAccountsAccountIdRoute: typeof ShellAccountsAccountIdRoute
   ShellMoreBudgetsRoute: typeof ShellMoreBudgetsRoute
   ShellMoreRecurringRoute: typeof ShellMoreRecurringRoute
+  ShellMoreReportsRoute: typeof ShellMoreReportsRoute
   ShellAccountsIndexRoute: typeof ShellAccountsIndexRoute
   ShellMoreIndexRoute: typeof ShellMoreIndexRoute
 }
@@ -240,6 +260,7 @@ const ShellRouteChildren: ShellRouteChildren = {
   ShellAccountsAccountIdRoute: ShellAccountsAccountIdRoute,
   ShellMoreBudgetsRoute: ShellMoreBudgetsRoute,
   ShellMoreRecurringRoute: ShellMoreRecurringRoute,
+  ShellMoreReportsRoute: ShellMoreReportsRoute,
   ShellAccountsIndexRoute: ShellAccountsIndexRoute,
   ShellMoreIndexRoute: ShellMoreIndexRoute,
 }

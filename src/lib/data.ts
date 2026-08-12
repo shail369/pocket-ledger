@@ -5,10 +5,11 @@ import type { Account, AppData, Budget, Category, Recurring, Transaction } from 
 export const DATA_KEY = ["wallet-data"];
 
 async function fetchAppData(): Promise<AppData> {
+  const transactionLimit = import.meta.env.VITE_MOBILE === "true" ? 1500 : 5000;
   const [accounts, categories, transactions, budgets, recurring] = await Promise.all([
     supabase.from("accounts").select("*").order("created_at"),
     supabase.from("categories").select("*").order("name"),
-    supabase.from("transactions").select("*").order("date", { ascending: false }).limit(5000),
+    supabase.from("transactions").select("*").order("date", { ascending: false }).limit(transactionLimit),
     supabase.from("budgets").select("*").order("created_at"),
     supabase.from("recurring_transactions").select("*").order("next_occurrence"),
   ]);
@@ -26,7 +27,7 @@ async function fetchAppData(): Promise<AppData> {
 const EMPTY: AppData = { accounts: [], categories: [], transactions: [], budgets: [], recurring: [] };
 
 export function useAppData() {
-  const query = useQuery({ queryKey: DATA_KEY, queryFn: fetchAppData, staleTime: 30_000 });
+  const query = useQuery({ queryKey: DATA_KEY, queryFn: fetchAppData, staleTime: 60_000, refetchOnWindowFocus: false });
   return { ...query, data: query.data ?? EMPTY, ready: !query.isLoading };
 }
 

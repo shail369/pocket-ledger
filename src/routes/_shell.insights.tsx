@@ -1,11 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo } from "react";
-import { TrendingDown, TrendingUp, Target } from "lucide-react";
 import { AccountSelector, PeriodSelector } from "@/components/app/selectors";
 import { CategoryBreakdown } from "@/components/app/category-breakdown";
 import { MonthlyComparisonChart, ProjectionChart, SpendingAreaChart } from "@/components/app/charts";
 import { EmptyState, ScreenHeader, Section, StatCard } from "@/components/app/pieces";
-import { AppIcon } from "@/components/app/icon";
 import { useAppData } from "@/lib/data";
 import { useAppState } from "@/lib/app-state";
 import { formatMoney, percent } from "@/lib/format";
@@ -45,15 +43,7 @@ function InsightsPage() {
   const budgets = budgetProgress(data.budgets, data.transactions, data.categories, accountId);
   const projection = projectMonth(all);
   const series = projectionSeries(all);
-
-  const thisMonth = months[months.length - 1];
-  const lastMonth = months[months.length - 2];
-  const delta =
-    thisMonth && lastMonth && lastMonth.expense > 0
-      ? ((thisMonth.expense - lastMonth.expense) / lastMonth.expense) * 100
-      : 0;
   const savingsRate = t.income > 0 ? (t.savings / t.income) * 100 : 0;
-  const topCategory = nodes[0];
   const avgDaily = projection.dailyRate;
 
   return (
@@ -71,41 +61,6 @@ function InsightsPage() {
         <StatCard label="Savings rate" value={percent(savingsRate)} tone="primary" />
         <StatCard label="Avg / day" value={formatMoney(avgDaily, currency, true)} />
       </div>
-
-      <Section title="Highlights">
-        <ul className="space-y-3">
-          <li className="flex items-start gap-3">
-            <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-secondary">
-              {delta >= 0 ? <TrendingUp className="size-4 text-expense" /> : <TrendingDown className="size-4 text-income" />}
-            </span>
-            <p className="text-sm">
-              You spent{" "}
-              <span className="font-bold">{percent(Math.abs(delta))}</span>{" "}
-              {delta >= 0 ? "more" : "less"} this month than last month.
-            </p>
-          </li>
-          {topCategory && (
-            <li className="flex items-start gap-3">
-              <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-secondary">
-                <AppIcon name={topCategory.icon} className="size-4" />
-              </span>
-              <p className="text-sm">
-                <span className="font-bold">{topCategory.name}</span> is your biggest category at{" "}
-                {formatMoney(topCategory.amount, currency)} ({percent(topCategory.percent)}).
-              </p>
-            </li>
-          )}
-          <li className="flex items-start gap-3">
-            <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-secondary">
-              <Target className="size-4 text-primary" />
-            </span>
-            <p className="text-sm">
-              At this pace you'll spend{" "}
-              <span className="font-bold">{formatMoney(projection.projected, currency)}</span> by the end of the month.
-            </p>
-          </li>
-        </ul>
-      </Section>
 
       <Section title="Spending trend" subtitle={range.label}>
         <SpendingAreaChart data={dailySeries(scoped, range)} />
@@ -130,7 +85,7 @@ function InsightsPage() {
         {budgets.length ? (
           <ul className="space-y-3">
             {budgets.map((b) => (
-              <li key={b.budget.id} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
+              <li key={`${b.budget.id}-${b.categoryName}-${b.rangeLabel}`} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
                 <div className="min-w-0">
                   <p className="truncate text-sm font-semibold">{b.categoryName}</p>
                   <p className="text-[11px] text-muted-foreground">

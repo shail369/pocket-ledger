@@ -13,6 +13,26 @@ export const Route = createFileRoute("/auth")({
   component: AuthPage,
 });
 
+const fieldStyle: React.CSSProperties = {
+  display: "block",
+  width: "100%",
+  height: 48,
+  boxSizing: "border-box",
+  border: "1px solid var(--input)",
+  borderRadius: 12,
+  background: "var(--background)",
+  color: "var(--foreground)",
+  padding: "0 12px",
+  fontSize: 16,
+  lineHeight: "24px",
+  outline: "none",
+  WebkitAppearance: "none",
+  appearance: "none",
+  WebkitUserSelect: "text",
+  userSelect: "text",
+  touchAction: "manipulation",
+};
+
 function AuthPage() {
   const { session } = useAuth();
   const navigate = useNavigate();
@@ -53,73 +73,95 @@ function AuthPage() {
     }
   };
 
-  const inputClass =
-    "block h-12 w-full box-border appearance-none rounded-xl border border-input bg-background px-3 text-base leading-6 text-foreground outline-none placeholder:text-muted-foreground focus:border-ring focus:ring-1 focus:ring-ring";
-
   return (
-    <main className="min-h-screen w-full px-6 py-8 sm:mx-auto sm:flex sm:min-h-dvh sm:max-w-md sm:flex-col sm:justify-center">
-      <div className="mx-auto w-full max-w-md">
-        <div className="mb-6 space-y-2 text-center">
-          <div className="mx-auto grid size-14 place-items-center rounded-3xl bg-primary text-primary-foreground">
-            <span className="text-xl font-bold">₹</span>
+    <main
+      style={{
+        position: "fixed",
+        inset: 0,
+        overflowY: "auto",
+        WebkitOverflowScrolling: "touch",
+        padding: "32px 24px",
+        boxSizing: "border-box",
+        background: "var(--background)",
+        color: "var(--foreground)",
+        WebkitTransform: "translateZ(0)",
+        transform: "translateZ(0)",
+        WebkitBackfaceVisibility: "hidden",
+        backfaceVisibility: "hidden",
+      }}
+    >
+      <div style={{ width: "100%", maxWidth: 448, margin: "0 auto" }}>
+        <div style={{ marginBottom: 24, textAlign: "center" }}>
+          <div
+            style={{
+              width: 56,
+              height: 56,
+              margin: "0 auto 8px",
+              display: "grid",
+              placeItems: "center",
+              borderRadius: 24,
+              background: "var(--primary)",
+              color: "var(--primary-foreground)",
+              fontSize: 20,
+              fontWeight: 700,
+            }}
+          >
+            ₹
           </div>
-          <h1 className="text-2xl font-extrabold tracking-tight">Paisa</h1>
-          <p className="text-sm text-muted-foreground">
-            Your accounts, spending, budgets and insights — in one pocket-sized app.
+          <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800 }}>Paisa</h1>
+          <p style={{ margin: "8px 0 0", fontSize: 14, color: "var(--muted-foreground)" }}>
+            Your accounts, spending, budgets and insights in one pocket-sized app.
           </p>
         </div>
 
-        <form onSubmit={submit} className="space-y-4 rounded-3xl bg-card p-5 shadow-sm ring-1 ring-border/60">
-          <div className="grid grid-cols-2 gap-1 rounded-2xl bg-secondary p-1">
-            <button
-              type="button"
-              onClick={() => setMode("signin")}
-              className={`h-10 rounded-xl text-sm font-semibold ${mode === "signin" ? "bg-card shadow-sm" : "text-muted-foreground"}`}
-            >
+        <form
+          onSubmit={submit}
+          style={{
+            padding: 20,
+            borderRadius: 24,
+            background: "var(--card)",
+            border: "1px solid var(--border)",
+          }}
+        >
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: 4,
+              padding: 4,
+              marginBottom: 16,
+              borderRadius: 16,
+              background: "var(--secondary)",
+            }}
+          >
+            <button type="button" onClick={() => setMode("signin")} style={{ height: 40, border: 0, borderRadius: 12, background: mode === "signin" ? "var(--card)" : "transparent", color: "var(--foreground)", fontWeight: 600 }}>
               Sign in
             </button>
-            <button
-              type="button"
-              onClick={() => setMode("signup")}
-              className={`h-10 rounded-xl text-sm font-semibold ${mode === "signup" ? "bg-card shadow-sm" : "text-muted-foreground"}`}
-            >
+            <button type="button" onClick={() => setMode("signup")} style={{ height: 40, border: 0, borderRadius: 12, background: mode === "signup" ? "var(--card)" : "transparent", color: "var(--foreground)", fontWeight: 600 }}>
               Create account
             </button>
           </div>
 
           {mode === "signup" && (
-            <label className="block space-y-1.5">
-              <span className="text-xs font-medium">Name</span>
-              <input ref={nameRef} autoComplete="name" className={inputClass} />
+            <label style={{ display: "block", marginBottom: 16 }}>
+              <span style={{ display: "block", marginBottom: 6, fontSize: 12, fontWeight: 600 }}>Name</span>
+              <input ref={nameRef} autoComplete="name" style={fieldStyle} />
             </label>
           )}
 
-          <label className="block space-y-1.5">
-            <span className="text-xs font-medium">Email</span>
-            <input ref={emailRef} type="email" inputMode="email" autoComplete="email" className={inputClass} />
+          <label style={{ display: "block", marginBottom: 16 }}>
+            <span style={{ display: "block", marginBottom: 6, fontSize: 12, fontWeight: 600 }}>Email</span>
+            <input ref={emailRef} type="email" inputMode="email" autoComplete="email" style={fieldStyle} />
           </label>
 
-          <label className="block space-y-1.5">
-            <span className="text-xs font-medium">Password</span>
-            <input
-              ref={passwordRef}
-              type="password"
-              autoComplete={mode === "signup" ? "new-password" : "current-password"}
-              className={inputClass}
-            />
+          <label style={{ display: "block", marginBottom: 16 }}>
+            <span style={{ display: "block", marginBottom: 6, fontSize: 12, fontWeight: 600 }}>Password</span>
+            <input ref={passwordRef} type="password" autoComplete={mode === "signup" ? "new-password" : "current-password"} style={fieldStyle} />
           </label>
 
-          <button
-            type="submit"
-            disabled={busy}
-            className="h-12 w-full rounded-xl bg-primary px-4 text-base font-semibold text-primary-foreground disabled:pointer-events-none disabled:opacity-50"
-          >
+          <button type="submit" disabled={busy} style={{ width: "100%", height: 48, border: 0, borderRadius: 12, background: "var(--primary)", color: "var(--primary-foreground)", fontSize: 16, fontWeight: 600 }}>
             {mode === "signin" ? "Sign in" : "Create account"}
           </button>
-
-          <p className="text-center text-[11px] text-muted-foreground">
-            New accounts start with clearly marked demo data so you can explore every feature.
-          </p>
         </form>
       </div>
     </main>

@@ -2,7 +2,6 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ChevronLeft, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { AccountSelector } from "@/components/app/selectors";
 import { EmptyState, Section } from "@/components/app/pieces";
 import { AppIcon } from "@/components/app/icon";
 import { Progress } from "@/components/ui/progress";
@@ -35,7 +34,6 @@ function BudgetsPage() {
   return (
     <div className="space-y-4">
       <header className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2"><Link to="/" className="grid size-9 place-items-center rounded-full bg-secondary"><ChevronLeft className="size-5" /></Link><h1 className="truncate text-lg font-extrabold">Budgets</h1><button onClick={() => { setEditing(null); setOpen(true); }} className="grid size-10 place-items-center rounded-full bg-primary text-primary-foreground" aria-label="Add budget"><Plus className="size-5" /></button></header>
-      <Section><AccountSelector /></Section>
       {progress.length ? progress.map((b) => (
         <Section key={`${b.categoryName}-${b.rangeLabel}-${b.budget.id}`}>
           <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3">

@@ -53,6 +53,9 @@ export function CategoryBreakdown({
     if (category) setSelected(category.id);
   };
 
+  const entries = active ? active.children : nodes;
+  const showDetailedEntries = showEntries || !!active;
+
   return (
     <Section
       title={active ? active.name : title}
@@ -74,16 +77,22 @@ export function CategoryBreakdown({
       <div className="flex items-center justify-center">
         <div className="relative size-44 shrink-0 sm:size-48">
           <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
+            <PieChart margin={{ top: 8, right: 96, bottom: 8, left: 8 }}>
               <Tooltip
-                formatter={(value, name) => [formatMoney(Number(value), currency), String(name)]}
+                cursor={false}
+                wrapperStyle={{ zIndex: 20, outline: "none" }}
                 contentStyle={{
                   borderRadius: "12px",
                   border: "1px solid hsl(var(--border))",
-                  background: "hsl(var(--background))",
-                  color: "hsl(var(--foreground))",
-                  boxShadow: "0 4px 12px rgb(0 0 0 / 0.08)",
+                  backgroundColor: "hsl(var(--popover))",
+                  color: "hsl(var(--popover-foreground))",
+                  boxShadow: "0 4px 12px rgb(0 0 0 / 0.18)",
+                  padding: "8px 10px",
                 }}
+                itemStyle={{ color: "hsl(var(--popover-foreground))" }}
+                labelStyle={{ color: "hsl(var(--popover-foreground))", fontWeight: 600 }}
+                formatter={(value, name) => [formatMoney(Number(value), currency), String(name)]}
+                position={{ x: 150, y: 40 }}
               />
               <Pie
                 data={pieData}
@@ -113,10 +122,10 @@ export function CategoryBreakdown({
         </div>
       </div>
 
-      {showEntries && (
+      {showDetailedEntries && (
         <>
           <div className="mt-4 space-y-1.5">
-            {(active ? active.children : nodes).slice(0, 4).map((c, i) => (
+            {entries.slice(0, 4).map((c, i) => (
               <div key={c.id} className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2">
                 <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
                 <span className="truncate text-xs">{c.name}</span>
@@ -126,7 +135,7 @@ export function CategoryBreakdown({
           </div>
 
           <div className="mt-3 divide-y divide-border/60">
-            {(active ? active.children : nodes).map((c) => {
+            {entries.map((c) => {
               const budget = active ? undefined : budgets.find((b) => b.budget.category_id === c.id);
               return (
                 <button

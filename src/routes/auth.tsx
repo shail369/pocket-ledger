@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Wallet } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,7 +14,7 @@ export const Route = createFileRoute("/auth")({
       { title: "Sign in — Paisa Expense Manager" },
       { name: "description", content: "Sign in to track your expenses, budgets and savings on Paisa." },
       { property: "og:title", content: "Sign in — Paisa Expense Manager" },
-      { property: "og:description", content: "Sign in to track your expenses, budgets and savings on Paisa." },
+      { property: "og:description", content: "Sign in to track your expenses, budgets and insights on Paisa." },
     ],
   }),
   component: AuthPage,
@@ -24,16 +24,21 @@ function AuthPage() {
   const { session } = useAuth();
   const navigate = useNavigate();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
+  const emailRef = useRef<HTMLInputElement>(null);
+  const passwordRef = useRef<HTMLInputElement>(null);
+  const nameRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (session) void navigate({ to: "/" });
   }, [session, navigate]);
 
   const submit = async () => {
+    const email = emailRef.current?.value.trim() ?? "";
+    const password = passwordRef.current?.value ?? "";
+    const name = nameRef.current?.value.trim() ?? "";
+    if (!email || !password) return;
+
     setBusy(true);
     try {
       if (mode === "signup") {
@@ -72,6 +77,7 @@ function AuthPage() {
           {(["signin", "signup"] as const).map((m) => (
             <button
               key={m}
+              type="button"
               onClick={() => setMode(m)}
               className={`h-10 rounded-xl text-sm font-semibold ${
                 mode === m ? "bg-card shadow-sm" : "text-muted-foreground"
@@ -84,29 +90,33 @@ function AuthPage() {
         {mode === "signup" && (
           <div className="space-y-1.5">
             <Label className="text-xs">Name</Label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} className="h-12 rounded-xl" />
+            <Input ref={nameRef} autoComplete="name" className="h-12 rounded-xl text-base" />
           </div>
         )}
         <div className="space-y-1.5">
           <Label className="text-xs">Email</Label>
           <Input
+            ref={emailRef}
             type="email"
             inputMode="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="h-12 rounded-xl"
+            autoComplete="email"
+            className="h-12 rounded-xl text-base"
           />
         </div>
         <div className="space-y-1.5">
           <Label className="text-xs">Password</Label>
           <Input
+            ref={passwordRef}
             type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="h-12 rounded-xl"
+            autoComplete={mode === "signup" ? "new-password" : "current-password"}
+            className="h-12 rounded-xl text-base"
           />
         </div>
-        <Button className="h-12 w-full rounded-xl text-base" onClick={submit} disabled={busy || !email || !password}>
+        <Button
+          className="h-12 w-full rounded-xl text-base"
+          onClick={submit}
+          disabled={busy}
+        >
           {mode === "signin" ? "Sign in" : "Create account"}
         </Button>
         <p className="text-center text-[11px] text-muted-foreground">

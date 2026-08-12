@@ -1,12 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { format, parseISO } from "date-fns";
-import { ChevronLeft, Download } from "lucide-react";
+import { ChevronLeft, Download, WalletCards } from "lucide-react";
 import { toast } from "sonner";
 import { EmptyState, Section, StatCard } from "@/components/app/pieces";
 import { MonthlyComparisonChart } from "@/components/app/charts";
 import { AppIcon } from "@/components/app/icon";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAppData } from "@/lib/data";
 import { useAppState } from "@/lib/app-state";
 import { formatMoney, percent } from "@/lib/format";
@@ -16,9 +17,9 @@ export const Route = createFileRoute("/_shell/more/reports")({
   head: () => ({
     meta: [
       { title: "Reports — Paisa Expense Manager" },
-      { name: "description", content: "Monthly, yearly, category and account reports with CSV export." },
+      { name: "description", content: "Monthly, yearly and category reports scoped to all accounts or a selected account." },
       { property: "og:title", content: "Reports — Paisa Expense Manager" },
-      { property: "og:description", content: "Monthly, yearly, category and account reports with CSV export." },
+      { property: "og:description", content: "Monthly, yearly and category reports scoped to all accounts or a selected account." },
     ],
   }),
   component: ReportsPage,
@@ -26,11 +27,13 @@ export const Route = createFileRoute("/_shell/more/reports")({
 
 const TABS = ["monthly", "yearly", "category", "account"] as const;
 type Tab = (typeof TABS)[number];
+const ALL = "__all__";
 
 function ReportsPage() {
   const { data } = useAppData();
   const { accountId, currency } = useAppState();
   const [tab, setTab] = useState<Tab>("monthly");
+  const selectedAccount = data.accounts.find((a) => a.id === accountId);
 
   const scoped = useMemo(() => scopeTransactions(data.transactions, accountId), [data.transactions, accountId]);
   const months = monthlySeries(scoped, 12);
@@ -73,6 +76,27 @@ function ReportsPage() {
         </Button>
       </header>
 
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
+        <Select value={accountId === "all" ? ALL : accountId} onValueChange={(v) => {
+          const target = v === ALL ? "all" : v;
+          window.dispatchEvent(new CustomEvent("pocket-ledger-account-change", { detail: target }));
+        }}>
+          <SelectTrigger className="h-11 w-full rounded-xl">
+            <WalletCards className="mr-1 size-4 shrink-0" />
+            <SelectValue placeholder="All accounts" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={ALL}>All accounts</SelectItem>
+            {data.accounts.map((a) => (
+              <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <div className="grid h-11 min-w-[120px] place-items-center rounded-xl bg-secondary px-3 text-xs font-semibold">
+          {selectedAccount?.name ?? "All accounts"}
+        </div>
+      </div>
+
       <div className="no-scrollbar flex gap-2 overflow-x-auto">
         {TABS.map((t) => (
           <button
@@ -89,7 +113,7 @@ function ReportsPage() {
 
       {tab === "monthly" && (
         <>
-          <Section title="Income vs expenses" subtitle="Last 12 months">
+          <Section title="Income vs expenses" subtitle={`${accountId === "all" ? "All accounts" : selectedAccount?.name ?? "Selected account"} · Last 12 months`}>
             <MonthlyComparisonChart data={months} />
           </Section>
           <Section title="Monthly summary">
@@ -98,9 +122,7 @@ function ReportsPage() {
                 <li key={m.key} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 py-2.5">
                   <span className="truncate text-sm font-semibold">{format(parseISO(`${m.key}-01`), "MMMM yyyy")}</span>
                   <span className="text-right">
-                    <span className="tabular block text-sm font-bold text-expense">
-                      −{formatMoney(m.expense, currency)}
-                    </span>
+                    <span className="tabular block text-sm font-bold text-expense">−{formatMoney(m.expense, currency)}</span>
                     <span className="tabular block text-[11px] text-income">+{formatMoney(m.income, currency)}</span>
                   </span>
                 </li>
@@ -117,14 +139,13 @@ function ReportsPage() {
             <StatCard label="Expenses" value={formatMoney(yearTotals.expenses, currency, true)} tone="expense" />
             <StatCard label="Saved" value={formatMoney(yearTotals.savings, currency, true)} tone="primary" />
           </div>
-          <Section title={`Year ${thisYear}`} subtitle={`${yearTx.length} transactions`}>
+          <Section title={`Year ${thisYear}`} subtitle={`${yearTx.length} transactions · ${accountId === "all" ? "All accounts" : selectedAccount?.name ?? "Selected account"}`}>
             <ul className="divide-y divide-border/60">
               {months.slice(-12).map((m) => (
                 <li key={m.key} className="grid grid-cols-[minmax(0,1fr)_auto] gap-3 py-2">
                   <span className="truncate text-sm">{format(parseISO(`${m.key}-01`), "MMM yyyy")}</span>
                   <span className={`tabular text-sm font-bold ${m.savings >= 0 ? "text-income" : "text-expense"}`}>
-                    {m.savings >= 0 ? "+" : "−"}
-                    {formatMoney(Math.abs(m.savings), currency)}
+                    {m.savings >= 0 ? "+" : "−"}{formatMoney(Math.abs(m.savings), currency)}
                   </span>
                 </li>
               ))}
@@ -134,15 +155,13 @@ function ReportsPage() {
       )}
 
       {tab === "category" && (
-        <Section title="Category report" subtitle={`Year ${thisYear}`}>
+        <Section title="Category report" subtitle={`Year ${thisYear} · ${accountId === "all" ? "All accounts" : selectedAccount?.name ?? "Selected account"}`}>
           {nodes.length ? (
             <ul className="divide-y divide-border/60">
               {nodes.map((n) => (
                 <li key={n.id} className="py-2.5">
                   <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3">
-                    <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-secondary">
-                      <AppIcon name={n.icon} className="size-4" />
-                    </span>
+                    <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-secondary"><AppIcon name={n.icon} className="size-4" /></span>
                     <span className="min-w-0 truncate text-sm font-semibold">{n.name}</span>
                     <span className="text-right">
                       <span className="tabular block text-sm font-bold">{formatMoney(n.amount, currency)}</span>
@@ -168,13 +187,9 @@ function ReportsPage() {
                 <li key={a.id} className="py-3">
                   <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
                     <span className="truncate text-sm font-semibold">{a.name}</span>
-                    <span className="tabular text-sm font-bold">
-                      {formatMoney(accountBalance(a, data.transactions), a.currency)}
-                    </span>
+                    <span className="tabular text-sm font-bold">{formatMoney(accountBalance(a, data.transactions), a.currency)}</span>
                   </div>
-                  <p className="mt-0.5 text-[11px] text-muted-foreground">
-                    +{formatMoney(t.income, a.currency)} in · −{formatMoney(t.expenses, a.currency)} out · {tx.length} txns
-                  </p>
+                  <p className="mt-0.5 text-[11px] text-muted-foreground">+{formatMoney(t.income, a.currency)} in · −{formatMoney(t.expenses, a.currency)} out · {tx.length} txns</p>
                 </li>
               );
             })}

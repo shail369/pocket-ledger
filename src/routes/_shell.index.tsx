@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo } from "react";
+import { format, parseISO } from "date-fns";
 import { CalendarClock } from "lucide-react";
 import { AccountSelector, PeriodSelector } from "@/components/app/selectors";
 import { CategoryBreakdown } from "@/components/app/category-breakdown";
@@ -148,7 +149,7 @@ function Dashboard() {
                 <span className="min-w-0">
                   <span className="block truncate text-sm font-semibold">{r.description}</span>
                   <span className="block text-[11px] text-muted-foreground">
-                    {r.next_occurrence} · {r.frequency}
+                    {format(parseISO(r.next_occurrence), "d MMM")} · {r.frequency}
                   </span>
                 </span>
                 <span className={`tabular text-sm font-bold ${r.type === "income" ? "text-income" : ""}`}>

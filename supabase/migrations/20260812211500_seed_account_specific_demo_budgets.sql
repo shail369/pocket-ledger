@@ -25,11 +25,12 @@ DECLARE
 BEGIN
   IF uid IS NULL THEN RAISE EXCEPTION 'Not authenticated'; END IF;
 
-  -- Only touch users who have the generated demo dataset.
-  IF NOT EXISTS (
-    SELECT 1 FROM transactions
-    WHERE user_id = uid AND description LIKE '[Demo]%'
-  ) THEN
+  IF NOT EXISTS (SELECT 1 FROM transactions WHERE user_id = uid AND description LIKE '[Demo]%') THEN
+    RETURN;
+  END IF;
+
+  -- Once the test dataset exists, leave it alone so refreshes do not reset it.
+  IF EXISTS (SELECT 1 FROM transactions WHERE user_id = uid AND description LIKE marker || '%') THEN
     RETURN;
   END IF;
 
@@ -49,14 +50,8 @@ BEGIN
 
   IF acc_hdfc IS NULL OR acc_cash IS NULL OR acc_gpay IS NULL OR acc_card IS NULL THEN RETURN; END IF;
 
-  -- Remove only the old account-less demo budgets. Real user budgets remain untouched.
-  DELETE FROM budgets
-  WHERE user_id = uid
-    AND account_id IS NULL;
-
-  -- Remove previously generated test rows so this function is safe to run again.
-  DELETE FROM transactions
-  WHERE user_id = uid AND description LIKE marker || '%';
+  -- Remove only the old account-less budgets left by the original demo seed.
+  DELETE FROM budgets WHERE user_id = uid AND account_id IS NULL;
 
   -- HDFC: Food + Transportation, both with matching current-month activity.
   INSERT INTO budgets(user_id, category_id, account_id, amount, period, start_date)

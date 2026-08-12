@@ -22,7 +22,7 @@ export default defineConfig({
     outDir: "dist",
     emptyOutDir: true,
     rollupOptions: {
-      input: "index.mobile.html",
+      input: "index.html",
     },
   },
 });

@@ -5,6 +5,12 @@ const config: CapacitorConfig = {
   appName: "Pocket Ledger",
   webDir: "dist",
   bundledWebRuntime: false,
+  plugins: {
+    Keyboard: {
+      resize: "none",
+      resizeOnFullScreen: false,
+    },
+  },
 };
 
 export default config;

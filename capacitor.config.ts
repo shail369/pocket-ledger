@@ -7,8 +7,11 @@ const config: CapacitorConfig = {
   bundledWebRuntime: false,
   plugins: {
     Keyboard: {
-      resize: "none",
-      resizeOnFullScreen: false,
+      // Let Android resize the WebView normally when the IME opens.
+      // Keeping resize disabled can leave the WebView under the keyboard
+      // and can cause broken input repaint/focus behavior on some devices.
+      resize: "native",
+      resizeOnFullScreen: true,
     },
   },
 };

@@ -17,12 +17,10 @@ const NAV = [
   { to: "/more", label: "More", icon: Menu },
 ] as const;
 
-async function ensureDemoBudgets(data: ReturnType<typeof useAppData>["data"]) {
+async function ensureDemoBudgets(data: ReturnType<typeof useAppData>["data"], userId: string) {
   if (!data.transactions.some((t) => t.description.startsWith("[Demo]"))) return;
   if (data.accounts.length < 4 || data.categories.length === 0) return;
-
-  const accountSpecific = data.budgets.filter((b) => b.account_id);
-  if (accountSpecific.length >= 6) return;
+  if (data.budgets.filter((b) => b.account_id).length >= 6) return;
 
   const byAccount = new Map(data.accounts.map((a) => [a.name, a.id]));
   const byCategory = new Map(data.categories.map((c) => [c.name, c.id]));
@@ -38,50 +36,48 @@ async function ensureDemoBudgets(data: ReturnType<typeof useAppData>["data"]) {
   const fuel = byCategory.get("Fuel");
   const electronics = byCategory.get("Electronics");
   const movies = byCategory.get("Movies");
-
   if (!hdfc || !cash || !gpay || !card || !food || !transport || !shopping || !entertainment || !restaurants || !fuel || !electronics || !movies) return;
 
-  // Remove the old global demo budgets and replace them with account-specific ones.
-  await supabase.from("budgets").delete().is("account_id", null).like("id", "%");
+  // Replace the old account-less demo budgets for this user.
+  const { error: deleteError } = await supabase.from("budgets").delete().is("account_id", null);
+  if (deleteError) throw deleteError;
 
-  const monthStart = new Date();
-  monthStart.setDate(1);
-  const startDate = monthStart.toISOString().slice(0, 10);
-  const weekStart = new Date();
-  weekStart.setDate(weekStart.getDate() - ((weekStart.getDay() + 6) % 7));
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
+  const weekStart = new Date(now);
+  weekStart.setDate(now.getDate() - ((now.getDay() + 6) % 7));
   const weekDate = weekStart.toISOString().slice(0, 10);
 
   const { error: budgetError } = await supabase.from("budgets").insert([
-    { category_id: food, account_id: hdfc, amount: 9000, period: "monthly", start_date: startDate },
-    { category_id: transport, account_id: hdfc, amount: 5000, period: "monthly", start_date: startDate },
-    { category_id: shopping, account_id: cash, amount: 7000, period: "monthly", start_date: startDate },
-    { category_id: food, account_id: cash, amount: 2200, period: "weekly", start_date: weekDate },
-    { category_id: entertainment, account_id: gpay, amount: 3000, period: "monthly", start_date: startDate },
-    { category_id: shopping, account_id: card, amount: 12000, period: "monthly", start_date: startDate },
-    { category_id: entertainment, account_id: card, amount: 4500, period: "monthly", start_date: startDate },
+    { user_id: userId, category_id: food, account_id: hdfc, amount: 9000, period: "monthly", start_date: monthStart },
+    { user_id: userId, category_id: transport, account_id: hdfc, amount: 5000, period: "monthly", start_date: monthStart },
+    { user_id: userId, category_id: shopping, account_id: cash, amount: 7000, period: "monthly", start_date: monthStart },
+    { user_id: userId, category_id: food, account_id: cash, amount: 2200, period: "weekly", start_date: weekDate },
+    { user_id: userId, category_id: entertainment, account_id: gpay, amount: 3000, period: "monthly", start_date: monthStart },
+    { user_id: userId, category_id: shopping, account_id: card, amount: 12000, period: "monthly", start_date: monthStart },
+    { user_id: userId, category_id: entertainment, account_id: card, amount: 4500, period: "monthly", start_date: monthStart },
   ]);
   if (budgetError) throw budgetError;
 
-  const today = new Date();
   const date = (daysAgo: number) => {
-    const d = new Date(today);
+    const d = new Date(now);
     d.setDate(d.getDate() - daysAgo);
     return d.toISOString().slice(0, 10);
   };
   const marker = "[Demo Budget Test]";
   const { error: txError } = await supabase.from("transactions").insert([
-    { account_id: hdfc, category_id: restaurants, amount: 1250, type: "expense", date: date(2), description: `${marker} HDFC restaurant` },
-    { account_id: hdfc, category_id: restaurants, amount: 780, type: "expense", date: date(6), description: `${marker} HDFC food` },
-    { account_id: hdfc, category_id: fuel, amount: 1600, type: "expense", date: date(4), description: `${marker} HDFC fuel` },
-    { account_id: hdfc, category_id: fuel, amount: 900, type: "expense", date: date(9), description: `${marker} HDFC transport` },
-    { account_id: cash, category_id: electronics, amount: 2400, type: "expense", date: date(3), description: `${marker} Cash electronics` },
-    { account_id: cash, category_id: electronics, amount: 950, type: "expense", date: date(8), description: `${marker} Cash shopping` },
-    { account_id: cash, category_id: restaurants, amount: 620, type: "expense", date: date(1), description: `${marker} Cash food` },
-    { account_id: cash, category_id: restaurants, amount: 480, type: "expense", date: date(5), description: `${marker} Cash food` },
-    { account_id: gpay, category_id: movies, amount: 550, type: "expense", date: date(2), description: `${marker} GPay movie` },
-    { account_id: gpay, category_id: movies, amount: 420, type: "expense", date: date(10), description: `${marker} GPay entertainment` },
-    { account_id: card, category_id: electronics, amount: 3200, type: "expense", date: date(3), description: `${marker} Card electronics` },
-    { account_id: card, category_id: movies, amount: 900, type: "expense", date: date(5), description: `${marker} Card movie` },
+    { user_id: userId, account_id: hdfc, category_id: restaurants, amount: 1250, type: "expense", date: date(2), description: `${marker} HDFC restaurant` },
+    { user_id: userId, account_id: hdfc, category_id: restaurants, amount: 780, type: "expense", date: date(6), description: `${marker} HDFC food` },
+    { user_id: userId, account_id: hdfc, category_id: fuel, amount: 1600, type: "expense", date: date(4), description: `${marker} HDFC fuel` },
+    { user_id: userId, account_id: hdfc, category_id: fuel, amount: 900, type: "expense", date: date(9), description: `${marker} HDFC transport` },
+    { user_id: userId, account_id: cash, category_id: electronics, amount: 2400, type: "expense", date: date(3), description: `${marker} Cash electronics` },
+    { user_id: userId, account_id: cash, category_id: electronics, amount: 950, type: "expense", date: date(8), description: `${marker} Cash shopping` },
+    { user_id: userId, account_id: cash, category_id: restaurants, amount: 620, type: "expense", date: date(1), description: `${marker} Cash food` },
+    { user_id: userId, account_id: cash, category_id: restaurants, amount: 480, type: "expense", date: date(5), description: `${marker} Cash food` },
+    { user_id: userId, account_id: gpay, category_id: movies, amount: 550, type: "expense", date: date(2), description: `${marker} GPay movie` },
+    { user_id: userId, account_id: gpay, category_id: movies, amount: 420, type: "expense", date: date(10), description: `${marker} GPay entertainment` },
+    { user_id: userId, account_id: card, category_id: electronics, amount: 3200, type: "expense", date: date(3), description: `${marker} Card electronics` },
+    { user_id: userId, account_id: card, category_id: movies, amount: 900, type: "expense", date: date(5), description: `${marker} Card movie` },
   ]);
   if (txError) throw txError;
 }
@@ -110,7 +106,7 @@ function ShellLayout() {
           await supabase.rpc("expand_demo_data");
         }
         await supabase.rpc("seed_account_specific_demo_budgets");
-        await ensureDemoBudgets(data);
+        await ensureDemoBudgets(data, session.user.id);
       } catch {
         // Demo seeding must never block the app from rendering.
       } finally {
@@ -127,7 +123,7 @@ function ShellLayout() {
     <div className="min-h-dvh bg-background">
       <div className="mx-auto w-full max-w-md px-4 pt-3"><div className="flex items-center justify-end border-b border-border/40 pb-2"><AccountSelector /></div></div>
       <div className="mx-auto min-h-dvh w-full max-w-md px-4 pb-28 pt-3"><Outlet /></div>
-      <button onClick={() => setAddOpen(true)} aria-label="Add transaction" className="fixed bottom-[76px] left-1/2 z-30 grid size-14 -translate-x-1/2 place-items-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 active:scale-95"><Plus className="size-7" /></button>
+      <button onClick={() => setAddOpen(true)} aria-label="Add transaction" className="fixed bottom-[76px] left-1/2 z-30 grid size-14 -translate-x-1/2 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 active:scale-95"><Plus className="size-7" /></button>
       <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-card/95 backdrop-blur"><div className="mx-auto grid max-w-md grid-cols-5 px-1 pb-[max(env(safe-area-inset-bottom),8px)] pt-2">{NAV.map((item) => { const active = item.to === "/" ? pathname === "/" : pathname === item.to || pathname.startsWith(`${item.to}/`); return <Link key={item.to} to={item.to} className={`flex min-w-0 flex-col items-center gap-1 rounded-xl py-1.5 text-[9px] font-semibold ${active ? "text-primary" : "text-muted-foreground"}`}><item.icon className="size-5" />{item.label}</Link>; })}</div></nav>
       <TransactionForm open={addOpen} onOpenChange={setAddOpen} />
     </div>

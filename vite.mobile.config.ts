@@ -1,4 +1,3 @@
-import { resolve } from "node:path";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { tanstackRouter } from "@tanstack/router-plugin/vite";
@@ -23,19 +22,7 @@ export default defineConfig({
     outDir: "dist",
     emptyOutDir: true,
     rollupOptions: {
-      input: resolve(process.cwd(), "mobile.html"),
-      output: {
-        entryFileNames: "assets/[name]-[hash].js",
-      },
+      input: "index.mobile.html",
     },
   },
-  plugins: [
-    tanstackRouter({
-      target: "react",
-      autoCodeSplitting: true,
-    }),
-    react(),
-    tailwindcss(),
-    tsconfigPaths(),
-  ],
 });

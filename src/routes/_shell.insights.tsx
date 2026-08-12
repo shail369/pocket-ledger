@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo } from "react";
-import { AccountSelector, PeriodSelector } from "@/components/app/selectors";
+import { PeriodSelector } from "@/components/app/selectors";
 import { CategoryBreakdown } from "@/components/app/category-breakdown";
 import { ProjectionChart, SpendingAreaChart } from "@/components/app/charts";
 import { EmptyState, ScreenHeader, Section, StatCard } from "@/components/app/pieces";

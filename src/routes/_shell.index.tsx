@@ -1,11 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo } from "react";
-import { format, parseISO } from "date-fns";
 import { CalendarClock } from "lucide-react";
 import { AccountSelector, PeriodSelector } from "@/components/app/selectors";
 import { CategoryBreakdown } from "@/components/app/category-breakdown";
 import { SpendingAreaChart } from "@/components/app/charts";
-import { EmptyState, Section, StatCard, TransactionRow } from "@/components/app/pieces";
+import { EmptyState, Section, StatCard } from "@/components/app/pieces";
 import { Progress } from "@/components/ui/progress";
 import { useAppData } from "@/lib/data";
 import { useAppState } from "@/lib/app-state";
@@ -48,7 +47,6 @@ function Dashboard() {
     [data.budgets, data.transactions, data.categories, accountId],
   );
   const overall = budgets.find((b) => !b.budget.category_id);
-  const recent = scoped.slice(0, 6);
   const upcoming = data.recurring
     .filter((r) => r.is_active && (accountId === "all" || r.account_id === accountId))
     .slice(0, 3);
@@ -84,7 +82,7 @@ function Dashboard() {
         {isLoading ? <EmptyState text="Loading…" /> : <SpendingAreaChart data={series} />}
       </Section>
 
-      <CategoryBreakdown nodes={nodes} budgets={budgets} />
+      <CategoryBreakdown nodes={nodes} budgets={budgets} showEntries={false} />
 
       <Section
         title="Budgets"
@@ -150,7 +148,7 @@ function Dashboard() {
                 <span className="min-w-0">
                   <span className="block truncate text-sm font-semibold">{r.description}</span>
                   <span className="block text-[11px] text-muted-foreground">
-                    {format(parseISO(r.next_occurrence), "d MMM")} · {r.frequency}
+                    {r.next_occurrence} · {r.frequency}
                   </span>
                 </span>
                 <span className={`tabular text-sm font-bold ${r.type === "income" ? "text-income" : ""}`}>
@@ -161,25 +159,6 @@ function Dashboard() {
           </ul>
         ) : (
           <EmptyState text="Nothing scheduled." />
-        )}
-      </Section>
-
-      <Section
-        title="Recent transactions"
-        action={
-          <Link to="/transactions" className="text-xs font-semibold text-primary">
-            View all
-          </Link>
-        }
-      >
-        {recent.length ? (
-          <div className="divide-y divide-border/60">
-            {recent.map((tx) => (
-              <TransactionRow key={tx.id} tx={tx} />
-            ))}
-          </div>
-        ) : (
-          <EmptyState text="No transactions in this period." />
         )}
       </Section>
     </div>

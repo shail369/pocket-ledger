@@ -24,6 +24,18 @@ export default defineConfig({
     emptyOutDir: true,
     rollupOptions: {
       input: resolve(process.cwd(), "mobile.html"),
+      output: {
+        entryFileNames: "assets/[name]-[hash].js",
+      },
     },
   },
+  plugins: [
+    tanstackRouter({
+      target: "react",
+      autoCodeSplitting: true,
+    }),
+    react(),
+    tailwindcss(),
+    tsconfigPaths(),
+  ],
 });

@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ChevronRight, PiggyBank, Repeat, FileBarChart, Settings, LogOut } from "lucide-react";
+import { ChevronRight, Wallet, ArrowLeftRight, PiggyBank, Repeat, FileBarChart, Settings, LogOut } from "lucide-react";
 import { toast } from "sonner";
 import { ScreenHeader, Section } from "@/components/app/pieces";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,18 +9,18 @@ export const Route = createFileRoute("/_shell/more/")({
   head: () => ({
     meta: [
       { title: "More — Paisa Expense Manager" },
-      { name: "description", content: "Budgets, recurring payments, reports and settings for your expense manager." },
+      { name: "description", content: "Accounts, transactions and other expense management tools." },
       { property: "og:title", content: "More — Paisa Expense Manager" },
-      { property: "og:description", content: "Budgets, recurring payments, reports and settings for your expense manager." },
+      { property: "og:description", content: "Accounts, transactions and other expense management tools." },
     ],
   }),
   component: MorePage,
 });
 
 const LINKS = [
-  { to: "/more/budgets", label: "Budgets", desc: "Limits by category and period", icon: PiggyBank },
+  { to: "/accounts", label: "Accounts", desc: "Manage accounts and balances", icon: Wallet },
+  { to: "/transactions", label: "Transactions", desc: "Search and manage activity", icon: ArrowLeftRight },
   { to: "/more/recurring", label: "Recurring", desc: "Subscriptions and repeat bills", icon: Repeat },
-  { to: "/more/reports", label: "Reports", desc: "Monthly, yearly and category reports", icon: FileBarChart },
   { to: "/more/settings", label: "Settings", desc: "Currency, theme, categories, data", icon: Settings },
 ] as const;
 

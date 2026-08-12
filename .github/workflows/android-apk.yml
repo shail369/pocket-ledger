@@ -43,6 +43,9 @@ jobs:
       - name: Install Android SDK packages
         run: sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
 
+      - name: Add Capacitor Android platform
+        run: npx cap add android
+
       - name: Sync Capacitor Android project
         run: npx cap sync android
 

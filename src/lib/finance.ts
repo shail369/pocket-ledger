@@ -268,6 +268,44 @@ export interface BudgetProgress {
   rangeLabel: string;
 }
 
+function buildBudgetProgress(
+  budget: Budget,
+  txs: Transaction[],
+  categories: Category[],
+  reference: Date,
+): BudgetProgress {
+  const byId = new Map(categories.map((c) => [c.id, c]));
+  const range = budgetRange(budget, reference);
+  const scoped = periodTransactions(txs, budget.account_id ?? "all", range).filter((t) => t.type === "expense");
+  const ids = budget.category_id
+    ? new Set([budget.category_id, ...categories.filter((c) => c.parent_id === budget.category_id).map((c) => c.id)])
+    : null;
+  const spent = sum(scoped.filter((t) => !ids || (t.category_id && ids.has(t.category_id))).map((t) => Number(t.amount)));
+  const amount = Number(budget.amount);
+  const totalDays = differenceInCalendarDays(range.to, range.from) + 1;
+  const elapsed = Math.min(totalDays, Math.max(1, differenceInCalendarDays(reference, range.from) + 1));
+  const projected = (spent / elapsed) * totalDays;
+  const cat = budget.category_id ? byId.get(budget.category_id) : undefined;
+  return {
+    budget,
+    categoryName: cat?.name ?? "Overall budget",
+    icon: cat?.icon ?? "wallet",
+    spent,
+    remaining: amount - spent,
+    percent: amount > 0 ? (spent / amount) * 100 : 0,
+    state: budgetStatus(spent, amount),
+    projected,
+    projectedState: budgetStatus(projected, amount),
+    rangeLabel: budget.period === "weekly" ? "Weekly" : "Monthly",
+  };
+}
+
+/**
+ * Category budgets are always account-specific. The All Accounts view sums
+ * the budgets for every account with the same category and period. Legacy
+ * global budgets are intentionally ignored so the total is a true sum of
+ * per-account budgets.
+ */
 export function budgetProgress(
   budgets: Budget[],
   txs: Transaction[],
@@ -275,38 +313,34 @@ export function budgetProgress(
   accountId: string,
   reference = new Date(),
 ): BudgetProgress[] {
-  const byId = new Map(categories.map((c) => [c.id, c]));
-  const childrenOf = (id: string) => categories.filter((c) => c.parent_id === id).map((c) => c.id);
+  const source = budgets.filter((b) => b.account_id && (accountId === "all" || b.account_id === accountId));
 
-  return budgets
-    .filter((b) => !b.account_id || accountId === "all" || b.account_id === accountId)
-    .map((b) => {
-      const range = budgetRange(b, reference);
-      const scoped = periodTransactions(txs, b.account_id ?? accountId, range).filter((t) => t.type === "expense");
-      const ids = b.category_id ? new Set([b.category_id, ...childrenOf(b.category_id)]) : null;
-      const spent = sum(
-        scoped.filter((t) => !ids || (t.category_id && ids.has(t.category_id))).map((t) => Number(t.amount)),
-      );
-      const amount = Number(b.amount);
-      const totalDays = differenceInCalendarDays(range.to, range.from) + 1;
-      const elapsed = Math.min(
-        totalDays,
-        Math.max(1, differenceInCalendarDays(reference, range.from) + 1),
-      );
-      const projected = (spent / elapsed) * totalDays;
-      const cat = b.category_id ? byId.get(b.category_id) : undefined;
-      return {
-        budget: b,
-        categoryName: cat?.name ?? "Overall budget",
-        icon: cat?.icon ?? "wallet",
-        spent,
-        remaining: amount - spent,
-        percent: amount > 0 ? (spent / amount) * 100 : 0,
-        state: budgetStatus(spent, amount),
-        projected,
-        projectedState: budgetStatus(projected, amount),
-        rangeLabel: b.period === "weekly" ? "Weekly" : "Monthly",
-      };
-    })
-    .sort((a, b) => b.percent - a.percent);
+  if (accountId !== "all") {
+    return source.map((budget) => buildBudgetProgress(budget, txs, categories, reference)).sort((a, b) => b.percent - a.percent);
+  }
+
+  const groups = new Map<string, BudgetProgress>();
+  for (const budget of source) {
+    const row = buildBudgetProgress(budget, txs, categories, reference);
+    const key = `${budget.category_id ?? "overall"}|${budget.period}`;
+    const existing = groups.get(key);
+    if (!existing) {
+      groups.set(key, {
+        ...row,
+        budget: { ...row.budget, account_id: null },
+      });
+      continue;
+    }
+
+    const amount = Number(existing.budget.amount) + Number(row.budget.amount);
+    existing.budget.amount = amount;
+    existing.spent += row.spent;
+    existing.remaining = amount - existing.spent;
+    existing.percent = amount > 0 ? (existing.spent / amount) * 100 : 0;
+    existing.state = budgetStatus(existing.spent, amount);
+    existing.projected += row.projected;
+    existing.projectedState = budgetStatus(existing.projected, amount);
+  }
+
+  return [...groups.values()].sort((a, b) => b.percent - a.percent);
 }

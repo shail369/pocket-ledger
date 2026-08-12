@@ -21,6 +21,7 @@ export const getRouter = () => {
     history: isMobile ? createHashHistory() : undefined,
     scrollRestoration: false,
     defaultPreloadStaleTime: isMobile ? 60_000 : 0,
+    defaultPreload: false,
   });
 
   return router;

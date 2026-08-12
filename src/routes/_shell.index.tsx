@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { format, parseISO } from "date-fns";
-import { CalendarClock, FileBarChart, PiggyBank } from "lucide-react";
+import { CalendarClock } from "lucide-react";
 import { AccountSelector, PeriodSelector } from "@/components/app/selectors";
 import { CategoryBreakdown } from "@/components/app/category-breakdown";
 import { SpendingAreaChart } from "@/components/app/charts";
@@ -35,18 +35,9 @@ function Dashboard() {
       <div className="grid grid-cols-3 gap-2"><StatCard label="Income" value={formatMoney(t.income, currency, true)} tone="income" /><StatCard label="Expenses" value={formatMoney(t.expenses, currency, true)} tone="expense" /><StatCard label="Savings" value={formatMoney(t.savings, currency, true)} tone="primary" hint={`${t.savingsRate.toFixed(0)}% rate`} /></div>
       <Section title="Spending overview" action={<span className="text-[11px] text-muted-foreground">{range.label}</span>}>{isLoading ? <EmptyState text="Loading…" /> : <SpendingAreaChart data={series} />}</Section>
       <CategoryBreakdown nodes={nodes} budgets={budgets} showEntries={false} />
-
-      <Section title="Budget & reports">
-        <div className="grid grid-cols-2 gap-2">
-          <Link to="/more/budgets" className="flex items-center gap-3 rounded-2xl bg-secondary p-3"><span className="grid size-10 place-items-center rounded-xl bg-background"><PiggyBank className="size-4" /></span><span><span className="block text-sm font-semibold">Budgets</span><span className="block text-[11px] text-muted-foreground">Manage spending limits</span></span></Link>
-          <Link to="/more/reports" className="flex items-center gap-3 rounded-2xl bg-secondary p-3"><span className="grid size-10 place-items-center rounded-xl bg-background"><FileBarChart className="size-4" /></span><span><span className="block text-sm font-semibold">Reports</span><span className="block text-[11px] text-muted-foreground">Monthly & yearly</span></span></Link>
-        </div>
-      </Section>
-
       <Section title="Budgets" action={<Link to="/more/budgets" className="text-xs font-semibold text-primary">Manage</Link>}>
         {budgets.length ? <div className="space-y-2.5">{budgets.filter((b) => b.budget.category_id).slice(0, 3).map((b) => <div key={`${b.budget.id}-${b.categoryName}-${b.rangeLabel}`}><div className="flex items-center justify-between text-xs"><span className="truncate font-medium">{b.categoryName} <span className="text-muted-foreground">· {b.rangeLabel}</span></span><span className="tabular text-muted-foreground">{formatMoney(b.spent, currency)} / {formatMoney(Number(b.budget.amount), currency)}</span></div><Progress value={Math.min(100, b.percent)} className={`mt-1 h-1.5 ${b.state === "over" ? "[&>div]:bg-expense" : b.state === "warning" ? "[&>div]:bg-warning" : ""}`} /></div>)}</div> : <EmptyState text="No budgets set for this account yet." />}
       </Section>
-
       <Section title="Upcoming" action={<Link to="/more/recurring" className="text-xs font-semibold text-primary">View all</Link>}>
         {upcoming.length ? <ul className="divide-y divide-border/60">{upcoming.map((r) => <li key={r.id} className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 py-2.5"><span className="grid size-9 shrink-0 place-items-center rounded-xl bg-secondary"><CalendarClock className="size-4" /></span><span className="min-w-0"><span className="block truncate text-sm font-semibold">{r.description}</span><span className="block text-[11px] text-muted-foreground">{format(parseISO(r.next_occurrence), "d MMM")} · {r.frequency}</span></span><span className={`tabular text-sm font-bold ${r.type === "income" ? "text-income" : ""}`}>{formatMoney(Number(r.amount), currency)}</span></li>)}</ul> : <EmptyState text="Nothing scheduled." />}
       </Section>

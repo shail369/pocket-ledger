@@ -1,0 +1,126 @@
+name: Build Android APK (Web/Remote)
+
+on:
+  workflow_dispatch:
+    inputs:
+      app_url:
+        description: "Published web app URL the APK should load (https://...)"
+        required: true
+        default: "https://pocket-ledger.lovable.app"
+      build_type:
+        description: "APK type to build"
+        type: choice
+        options: [debug, release-unsigned]
+        default: debug
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-apk-web-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-android-web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Validate URL
+        run: |
+          case "${{ inputs.app_url }}" in
+            https://*) echo "ok" ;;
+            *) echo "::error::app_url must start with https://"; exit 1 ;;
+          esac
+
+      - name: Create remote-URL Capacitor config
+        run: |
+          rm -f capacitor.config.ts
+          cat > capacitor.config.json <<JSON
+          {
+            "appId": "com.shailshah.pocketledger",
+            "appName": "Pocket Ledger",
+            "webDir": "dist",
+            "server": {
+              "url": "${{ inputs.app_url }}",
+              "cleartext": false,
+              "androidScheme": "https"
+            },
+            "android": {
+              "allowMixedContent": false,
+              "webContentsDebuggingEnabled": false
+            }
+          }
+JSON
+          cat capacitor.config.json
+
+      - name: Create fallback web assets
+        run: |
+          mkdir -p dist
+          cat > dist/index.html <<'HTML'
+          <!doctype html>
+          <html lang="en"><head><meta charset="utf-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+          <title>Pocket Ledger</title></head>
+          <body style="font-family:system-ui;display:grid;place-items:center;height:100vh;margin:0">
+          <p>Connecting to Pocket Ledger…</p></body></html>
+HTML
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Add Capacitor Android platform
+        run: |
+          if [ ! -d android ]; then npx cap add android; fi
+
+      - name: Sync Capacitor Android project
+        run: npx cap sync android
+
+      - name: Allow internet access
+        run: |
+          MANIFEST=android/app/src/main/AndroidManifest.xml
+          grep -q 'android.permission.INTERNET' "$MANIFEST" || \
+            sed -i 's#</manifest>#    <uses-permission android:name="android.permission.INTERNET" />\n</manifest>#' "$MANIFEST"
+          grep -n 'INTERNET' "$MANIFEST"
+
+      - name: Build APK
+        working-directory: android
+        run: |
+          chmod +x ./gradlew
+          if [ "${{ inputs.build_type }}" = "release-unsigned" ]; then
+            ./gradlew assembleRelease --no-daemon --stacktrace
+          else
+            ./gradlew assembleDebug --no-daemon --stacktrace
+          fi
+
+      - name: Collect APK
+        run: |
+          mkdir -p artifacts
+          find android/app/build/outputs/apk -name "*.apk" -exec cp {} artifacts/ \;
+          ls -lh artifacts
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: pocket-ledger-web-apk-${{ inputs.build_type || 'debug' }}
+          path: artifacts/*.apk
+          if-no-files-found: error
+          retention-days: 30

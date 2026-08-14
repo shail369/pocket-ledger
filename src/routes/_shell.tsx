@@ -101,10 +101,7 @@ function ShellLayout() {
       try {
         if (data.accounts.length === 0) {
           await supabase.rpc("seed_demo_data");
-        } else if (data.transactions.some((t) => t.description.startsWith("[Demo]"))) {
-          await supabase.rpc("expand_demo_data");
         }
-        await supabase.rpc("seed_account_specific_demo_budgets");
         await ensureDemoBudgets(data, session.user.id);
       } catch {
       } finally {

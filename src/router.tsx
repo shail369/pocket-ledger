@@ -3,7 +3,7 @@ import { createHashHistory, createRouter } from "@tanstack/react-router";
 import { routeTree } from "./routeTree.gen";
 
 export const getRouter = () => {
-  const isMobile = import.meta.env.VITE_MOBILE === "true";
+  const isMobile = import.meta.env['VITE_MOBILE'] === "true";
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: {
@@ -18,7 +18,7 @@ export const getRouter = () => {
   const router = createRouter({
     routeTree,
     context: { queryClient },
-    history: isMobile ? createHashHistory() : undefined,
+    ...(isMobile ? { history: createHashHistory() } : {}),
     scrollRestoration: false,
     defaultPreloadStaleTime: isMobile ? 60_000 : 0,
     defaultPreload: false,

@@ -1566,3 +1566,10 @@ npm run dev
 5. On the phone, allow "Install unknown apps" for your file manager, then tap the APK.
 
 The workflow builds the Capacitor web bundle (`npm run build:mobile`), generates the Android project, and compiles with the Gradle wrapper. Backend credentials come from the committed `.env`, or from repo secrets `VITE_SUPABASE_URL` / `VITE_SUPABASE_PUBLISHABLE_KEY` if `.env` is absent.
+
+## Build an APK that loads the live web app
+
+If the bundled-offline APK misbehaves, use **Actions → Build Android APK (Web/Remote) → Run workflow**.
+Enter your published app URL (e.g. `https://your-app.lovable.app`) and pick `debug`.
+The generated APK is a thin native shell that loads the live site, so it always
+matches the deployed web version and avoids bundled-asset issues.

@@ -5,11 +5,17 @@ const config: CapacitorConfig = {
   appName: "Pocket Ledger",
   webDir: "dist",
   bundledWebRuntime: false,
+  android: {
+    // https scheme keeps secure-context APIs (crypto, storage) working for auth.
+    allowMixedContent: false,
+    webContentsDebuggingEnabled: false,
+  },
+  server: {
+    androidScheme: "https",
+  },
   plugins: {
     Keyboard: {
       // Let Android resize the WebView normally when the IME opens.
-      // Keeping resize disabled can leave the WebView under the keyboard
-      // and can cause broken input repaint/focus behavior on some devices.
       resize: "native",
       resizeOnFullScreen: true,
     },

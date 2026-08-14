@@ -2,20 +2,24 @@ name: Build Android APK
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
+    inputs:
+      build_type:
+        description: "APK type to build"
+        type: choice
+        options: [debug, release-unsigned]
+        default: debug
 
 permissions:
   contents: read
 
-env:
-  NODE_VERSION: 22
-  GRADLE_VERSION: 8.14.3
+concurrency:
+  group: android-apk-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build-android:
     runs-on: ubuntu-latest
+    timeout-minutes: 40
 
     steps:
       - name: Checkout
@@ -24,46 +28,68 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version: 22
 
       - name: Install dependencies
-        run: npm install
+        run: npm install --no-audit --no-fund
+
+      - name: Ensure backend env vars
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+        run: |
+          if grep -q "VITE_SUPABASE_URL" .env 2>/dev/null; then
+            echo "Using committed .env"
+          elif [ -n "$VITE_SUPABASE_URL" ] && [ -n "$VITE_SUPABASE_PUBLISHABLE_KEY" ]; then
+            printf 'VITE_SUPABASE_URL="%s"\nVITE_SUPABASE_PUBLISHABLE_KEY="%s"\n' "$VITE_SUPABASE_URL" "$VITE_SUPABASE_PUBLISHABLE_KEY" > .env
+          else
+            echo "::error::No backend credentials found (.env missing and repo secrets not set)."
+            exit 1
+          fi
 
       - name: Build mobile web assets
         run: npm run build:mobile
+
+      - name: Verify web build output
+        run: test -f dist/index.html && test -d dist/assets
 
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '21'
+          cache: gradle
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Install Android SDK packages
-        run: sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
-
       - name: Add Capacitor Android platform
-        run: npx cap add android
+        run: |
+          if [ ! -d android ]; then npx cap add android; fi
 
       - name: Sync Capacitor Android project
         run: npx cap sync android
 
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: ${{ env.GRADLE_VERSION }}
-          cache-read-only: false
-
-      - name: Build debug APK
+      - name: Build APK
         working-directory: android
-        run: gradle assembleDebug --no-daemon --stacktrace
+        run: |
+          chmod +x ./gradlew
+          if [ "${{ inputs.build_type }}" = "release-unsigned" ]; then
+            ./gradlew assembleRelease --no-daemon --stacktrace
+          else
+            ./gradlew assembleDebug --no-daemon --stacktrace
+          fi
+
+      - name: Collect APK
+        run: |
+          mkdir -p artifacts
+          find android/app/build/outputs/apk -name "*.apk" -exec cp {} artifacts/ \;
+          ls -lh artifacts
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: pocket-ledger-debug-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: pocket-ledger-apk-${{ inputs.build_type || 'debug' }}
+          path: artifacts/*.apk
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 30

@@ -1556,3 +1556,13 @@ cd <repository-name>
 npm i
 npm run dev
 ```
+
+## Building the Android APK
+
+1. Push this project to GitHub (Lovable → GitHub sync).
+2. Open the repo → **Actions** → **Build Android APK** → **Run workflow**.
+3. Choose `debug` (installable right away) or `release-unsigned`, then run.
+4. When it finishes, download the **pocket-ledger-apk-debug** artifact, unzip it, and copy the `.apk` to your phone.
+5. On the phone, allow "Install unknown apps" for your file manager, then tap the APK.
+
+The workflow builds the Capacitor web bundle (`npm run build:mobile`), generates the Android project, and compiles with the Gradle wrapper. Backend credentials come from the committed `.env`, or from repo secrets `VITE_SUPABASE_URL` / `VITE_SUPABASE_PUBLISHABLE_KEY` if `.env` is absent.

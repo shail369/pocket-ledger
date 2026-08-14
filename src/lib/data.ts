@@ -5,7 +5,7 @@ import type { Account, AppData, Budget, Category, Recurring, Transaction } from 
 export const DATA_KEY = ["wallet-data"];
 
 async function fetchAppData(): Promise<AppData> {
-  const transactionLimit = import.meta.env.VITE_MOBILE === "true" ? 1500 : 5000;
+  const transactionLimit = import.meta.env['VITE_MOBILE'] === "true" ? 1500 : 5000;
   const [accounts, categories, transactions, budgets, recurring] = await Promise.all([
     supabase.from("accounts").select("*").order("created_at"),
     supabase.from("categories").select("*").order("name"),

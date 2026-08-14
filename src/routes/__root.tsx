@@ -16,7 +16,7 @@ import { AuthProvider } from "@/lib/auth";
 import { AppStateProvider } from "@/lib/app-state";
 import { Toaster } from "@/components/ui/sonner";
 
-const isMobile = import.meta.env.VITE_MOBILE === "true";
+const isMobile = import.meta.env['VITE_MOBILE'] === "true";
 
 function NotFoundComponent() {
   return (

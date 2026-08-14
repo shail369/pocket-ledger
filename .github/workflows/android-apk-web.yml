@@ -75,7 +75,7 @@ JSON
           <title>Pocket Ledger</title></head>
           <body style="font-family:system-ui;display:grid;place-items:center;height:100vh;margin:0">
           <p>Connecting to Pocket Ledger…</p></body></html>
-          HTML
+HTML
 
       - name: Setup Java
         uses: actions/setup-java@v4

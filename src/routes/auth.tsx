@@ -76,18 +76,12 @@ function AuthPage() {
   return (
     <main
       style={{
-        position: "fixed",
-        inset: 0,
-        overflowY: "auto",
-        WebkitOverflowScrolling: "touch",
+        minHeight: "100dvh",
+        width: "100%",
         padding: "32px 24px",
         boxSizing: "border-box",
         background: "var(--background)",
         color: "var(--foreground)",
-        WebkitTransform: "translateZ(0)",
-        transform: "translateZ(0)",
-        WebkitBackfaceVisibility: "hidden",
-        backfaceVisibility: "hidden",
       }}
     >
       <div style={{ width: "100%", maxWidth: 448, margin: "0 auto" }}>

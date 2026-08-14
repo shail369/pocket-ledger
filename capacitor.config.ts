@@ -15,8 +15,9 @@ const config: CapacitorConfig = {
   },
   plugins: {
     Keyboard: {
-      // Let Android resize the WebView normally when the IME opens.
-      resize: "native",
+      // Resize the web view body when the IME opens; "native" can leave the
+      // WebView unresponsive on some Android devices.
+      resize: "body",
       resizeOnFullScreen: true,
     },
   },

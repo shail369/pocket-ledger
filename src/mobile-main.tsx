@@ -1,27 +1,54 @@
+import "./styles.css";
 import { createRoot } from "react-dom/client";
-import { RouterProvider } from "@tanstack/react-router";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ThemeProvider } from "@/lib/theme";
+import { AuthProvider, useAuth } from "@/lib/auth";
+import { AppStateProvider } from "@/lib/app-state";
+import { MobileAuthReact } from "./mobile-auth-react";
+import { MobileRouterProvider } from "./mobile-router-shim";
+import { Route as ShellRoute } from "./routes/_shell";
 
-const hash = window.location.hash;
-const isAuthHash = hash === "#/auth" || hash.startsWith("#/auth?") || hash === "";
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 60_000,
+      gcTime: 5 * 60_000,
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+    },
+  },
+});
+
+function MobileApp() {
+  const { session, loading } = useAuth();
+
+  if (loading) {
+    return <div className="grid min-h-dvh place-items-center bg-background"><div className="size-8 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>;
+  }
+
+  if (!session) return <MobileAuthReact />;
+
+  const Shell = ShellRoute.component;
+  return <Shell />;
+}
 
 async function start() {
   const rootElement = document.getElementById("root");
   if (!rootElement) throw new Error("Pocket Ledger mobile root element was not found.");
 
-  if (isAuthHash) {
-    // Keep TanStack Router, but use a tiny router containing only the auth route.
-    // The full application router/providers/charts are not loaded until after login.
-    const { getMobileAuthRouter } = await import("./mobile-auth-router");
-    const router = getMobileAuthRouter();
-    createRoot(rootElement).render(<RouterProvider router={router} />);
-    return;
-  }
-
-  // Authenticated app: load the normal application only after the auth screen.
-  await import("./styles.css");
-  const { getRouter } = await import("./router");
-  const router = getRouter();
-  createRoot(rootElement).render(<RouterProvider router={router} />);
+  createRoot(rootElement).render(
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider>
+        <AuthProvider>
+          <AppStateProvider>
+            <MobileRouterProvider>
+              <MobileApp />
+            </MobileRouterProvider>
+          </AppStateProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </QueryClientProvider>,
+  );
 
   try {
     const { Capacitor } = await import("@capacitor/core");

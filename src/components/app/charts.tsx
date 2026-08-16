@@ -24,13 +24,11 @@ function TooltipBox({ active, payload, label, currency }: any) {
   return (
     <div className="rounded-xl border border-border bg-popover px-2.5 py-1.5 text-[11px] shadow-lg">
       <p className="font-semibold">{label}</p>
-      {payload
-        .filter((p: any) => p.value != null)
-        .map((p: any) => (
-          <p key={p.dataKey} style={{ color: p.color }} className="tabular">
-            {p.name}: {formatMoney(Number(p.value), currency)}
-          </p>
-        ))}
+      {payload.filter((p: any) => p.value != null).map((p: any) => (
+        <p key={p.dataKey} style={{ color: p.color }} className="tabular">
+          {p.name}: {formatMoney(Number(p.value), currency)}
+        </p>
+      ))}
     </div>
   );
 }
@@ -57,17 +55,14 @@ export function SpendingAreaChart({ data }: { data: { label: string; expense: nu
           stroke="var(--chart-1)"
           strokeWidth={2}
           fill="url(#spendFill)"
+          isAnimationActive={false}
         />
       </AreaChart>
     </ResponsiveContainer>
   );
 }
 
-export function IncomeExpenseLineChart({
-  data,
-}: {
-  data: { label: string; income: number; expense: number }[];
-}) {
+export function IncomeExpenseLineChart({ data }: { data: { label: string; income: number; expense: number }[] }) {
   const { currency } = useAppState();
   return (
     <ResponsiveContainer width="100%" height={160}>
@@ -76,18 +71,14 @@ export function IncomeExpenseLineChart({
         <XAxis dataKey="label" {...axis} minTickGap={20} />
         <YAxis {...axis} width={44} tickFormatter={(v) => formatMoney(Number(v), currency, true)} />
         <Tooltip content={<TooltipBox currency={currency} />} />
-        <Line type="monotone" dataKey="income" name="Income" stroke="var(--income)" strokeWidth={2} dot={false} />
-        <Line type="monotone" dataKey="expense" name="Expenses" stroke="var(--expense)" strokeWidth={2} dot={false} />
+        <Line type="monotone" dataKey="income" name="Income" stroke="var(--income)" strokeWidth={2} dot={false} isAnimationActive={false} />
+        <Line type="monotone" dataKey="expense" name="Expenses" stroke="var(--expense)" strokeWidth={2} dot={false} isAnimationActive={false} />
       </LineChart>
     </ResponsiveContainer>
   );
 }
 
-export function ProjectionChart({
-  data,
-}: {
-  data: { label: string; actual: number | null; projected: number | null }[];
-}) {
+export function ProjectionChart({ data }: { data: { label: string; actual: number | null; projected: number | null }[] }) {
   const { currency } = useAppState();
   return (
     <ResponsiveContainer width="100%" height={150}>
@@ -96,35 +87,14 @@ export function ProjectionChart({
         <XAxis dataKey="label" {...axis} minTickGap={18} />
         <YAxis {...axis} width={44} tickFormatter={(v) => formatMoney(Number(v), currency, true)} />
         <Tooltip content={<TooltipBox currency={currency} />} />
-        <Line
-          type="monotone"
-          dataKey="actual"
-          name="Actual"
-          stroke="var(--chart-1)"
-          strokeWidth={2.5}
-          dot={false}
-          connectNulls
-        />
-        <Line
-          type="monotone"
-          dataKey="projected"
-          name="Projected"
-          stroke="var(--warning)"
-          strokeWidth={2}
-          strokeDasharray="4 4"
-          dot={false}
-          connectNulls
-        />
+        <Line type="monotone" dataKey="actual" name="Actual" stroke="var(--chart-1)" strokeWidth={2.5} dot={false} connectNulls isAnimationActive={false} />
+        <Line type="monotone" dataKey="projected" name="Projected" stroke="var(--warning)" strokeWidth={2} strokeDasharray="4 4" dot={false} connectNulls isAnimationActive={false} />
       </LineChart>
     </ResponsiveContainer>
   );
 }
 
-export function MonthlyComparisonChart({
-  data,
-}: {
-  data: { label: string; income: number; expense: number }[];
-}) {
+export function MonthlyComparisonChart({ data }: { data: { label: string; income: number; expense: number }[] }) {
   return (
     <div className="no-scrollbar overflow-x-auto">
       <div style={{ minWidth: Math.max(280, data.length * 56) }}>

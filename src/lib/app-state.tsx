@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { resolveRange, type PeriodKey, type Range } from "./finance";
 
 interface AppState {
@@ -28,38 +28,39 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     if (stored) setCurrencyState(stored);
   }, []);
 
-  const setCurrency = (c: string) => {
+  const setCurrency = useCallback((c: string) => {
     setCurrencyState(c);
     localStorage.setItem("wallet-currency", c);
-  };
+  }, []);
+
+  const setCustom = useCallback((from: string, to: string) => {
+    setCustomFrom(from);
+    setCustomTo(to);
+    setPeriod("custom");
+  }, []);
 
   const range = useMemo(
     () => resolveRange(period, { from: customFrom, to: customTo }),
     [period, customFrom, customTo],
   );
 
-  return (
-    <Ctx.Provider
-      value={{
-        accountId,
-        setAccountId,
-        period,
-        setPeriod,
-        customFrom,
-        customTo,
-        setCustom: (f, t) => {
-          setCustomFrom(f);
-          setCustomTo(t);
-          setPeriod("custom");
-        },
-        range,
-        currency,
-        setCurrency,
-      }}
-    >
-      {children}
-    </Ctx.Provider>
+  const value = useMemo(
+    () => ({
+      accountId,
+      setAccountId,
+      period,
+      setPeriod,
+      customFrom,
+      customTo,
+      setCustom,
+      range,
+      currency,
+      setCurrency,
+    }),
+    [accountId, period, customFrom, customTo, setCustom, range, currency, setCurrency],
   );
+
+  return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 
 export function useAppState() {

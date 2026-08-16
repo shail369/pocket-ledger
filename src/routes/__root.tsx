@@ -15,6 +15,7 @@ import { ThemeProvider, THEME_SCRIPT } from "@/lib/theme";
 import { AuthProvider } from "@/lib/auth";
 import { AppStateProvider } from "@/lib/app-state";
 import { Toaster } from "@/components/ui/sonner";
+import { MobileAuth } from "@/mobile-auth";
 
 const isMobile = import.meta.env['VITE_MOBILE'] === "true";
 
@@ -26,9 +27,7 @@ function NotFoundComponent() {
         <h2 className="mt-4 text-xl font-semibold text-foreground">Page not found</h2>
         <p className="mt-2 text-sm text-muted-foreground">The page you're looking for doesn't exist or has been moved.</p>
         <div className="mt-6">
-          <Link to="/" className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">
-            Go home
-          </Link>
+          <Link to="/" className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">Go home</Link>
         </div>
       </div>
     </div>
@@ -94,6 +93,13 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+
+  // Keep the mobile auth screen outside the global React providers. This makes
+  // the keyboard/input path as close as possible to the known-good WebView
+  // diagnostic while leaving the authenticated app unchanged.
+  if (isMobile && window.location.pathname.endsWith("/auth")) {
+    return <MobileAuth />;
+  }
 
   return (
     <QueryClientProvider client={queryClient}>

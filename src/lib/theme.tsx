@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 
 type Theme = "light" | "dark";
 
@@ -27,11 +27,18 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     document.documentElement.classList.toggle("dark", t === "dark");
   }, []);
 
-  return (
-    <ThemeContext.Provider value={{ theme, setTheme, toggle: () => setTheme(theme === "dark" ? "light" : "dark") }}>
-      {children}
-    </ThemeContext.Provider>
-  );
+  const toggle = useCallback(() => {
+    setThemeState((current) => {
+      const next = current === "dark" ? "light" : "dark";
+      localStorage.setItem("wallet-theme", next);
+      document.documentElement.classList.toggle("dark", next === "dark");
+      return next;
+    });
+  }, []);
+
+  const value = useMemo(() => ({ theme, setTheme, toggle }), [theme, setTheme, toggle]);
+
+  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }
 
 export const useTheme = () => useContext(ThemeContext);

@@ -1,17 +1,21 @@
 import { defineConfig } from "vite";
-import { tanstackRouter } from "@tanstack/router-plugin/vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import tsconfigPaths from "vite-tsconfig-paths";
+import { resolve } from "node:path";
 
 export default defineConfig({
   base: "./",
   plugins: [
-    tanstackRouter({ target: "react", autoCodeSplitting: true }),
     react(),
     tailwindcss(),
     tsconfigPaths(),
   ],
+  resolve: {
+    alias: {
+      "@tanstack/react-router": resolve(process.cwd(), "src/mobile-router-shim.tsx"),
+    },
+  },
   define: {
     "import.meta.env.VITE_MOBILE": JSON.stringify("true"),
   },

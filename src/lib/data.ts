@@ -39,28 +39,50 @@ export function useInvalidateData() {
 type Table = "accounts" | "categories" | "transactions" | "budgets" | "recurring_transactions";
 
 export function useUpsert(table: Table) {
-  const invalidate = useInvalidateData();
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (row: Record<string, unknown>) => {
       const { data: userRes } = await supabase.auth.getUser();
       const payload = { ...row, user_id: userRes.user?.id };
       const rowId = row["id"] as string | undefined;
-      const { error } = rowId
-        ? await supabase.from(table).update(row as never).eq("id", rowId)
-        : await supabase.from(table).insert(payload as never);
-      if (error) throw error;
+      const result = rowId
+        ? await supabase.from(table).update(row as never).eq("id", rowId).select("*").single()
+        : await supabase.from(table).insert(payload as never).select("*").single();
+      if (result.error) throw result.error;
+      return result.data as never;
     },
-    onSuccess: () => invalidate(),
+    onSuccess: (saved) => {
+      queryClient.setQueryData<AppData>(DATA_KEY, (current) => {
+        if (!current) return current;
+        const item = saved as Record<string, unknown>;
+        const id = String(item.id ?? "");
+        const key = table === "recurring_transactions" ? "recurring" : table;
+        const rows = current[key as keyof AppData] as unknown as Record<string, unknown>[];
+        const index = rows.findIndex((r) => String(r.id) === id);
+        const nextRows = index >= 0
+          ? rows.map((r, i) => (i === index ? saved : r))
+          : [saved, ...rows];
+        return { ...current, [key]: nextRows } as AppData;
+      });
+    },
   });
 }
 
 export function useRemove(table: Table) {
-  const invalidate = useInvalidateData();
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from(table).delete().eq("id", id);
       if (error) throw error;
+      return id;
     },
-    onSuccess: () => invalidate(),
+    onSuccess: (id) => {
+      queryClient.setQueryData<AppData>(DATA_KEY, (current) => {
+        if (!current) return current;
+        const key = table === "recurring_transactions" ? "recurring" : table;
+        const rows = current[key as keyof AppData] as unknown as { id: string }[];
+        return { ...current, [key]: rows.filter((row) => row.id !== id) } as AppData;
+      });
+    },
   });
 }

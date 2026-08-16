@@ -58,11 +58,7 @@ async function ensureDemoBudgets(data: ReturnType<typeof useAppData>["data"], us
   ]);
   if (budgetError) throw budgetError;
 
-  const date = (daysAgo: number) => {
-    const d = new Date(now);
-    d.setDate(d.getDate() - daysAgo);
-    return d.toISOString().slice(0, 10);
-  };
+  const date = (daysAgo: number) => { const d = new Date(now); d.setDate(d.getDate() - daysAgo); return d.toISOString().slice(0, 10); };
   const marker = "[Demo Budget Test]";
   const { error: txError } = await supabase.from("transactions").insert([
     { user_id: userId, account_id: hdfc, category_id: restaurants, amount: 1250, type: "expense", date: date(2), description: `${marker} HDFC restaurant` },
@@ -99,9 +95,7 @@ function ShellLayout() {
     seeded.current = true;
     void (async () => {
       try {
-        if (data.accounts.length === 0) {
-          await supabase.rpc("seed_demo_data");
-        }
+        if (data.accounts.length === 0) await supabase.rpc("seed_demo_data");
         await ensureDemoBudgets(data, session.user.id);
       } catch {
       } finally {
@@ -110,9 +104,7 @@ function ShellLayout() {
     })();
   }, [session, isLoading, data.accounts.length, data.transactions, data.budgets, data.categories, invalidate]);
 
-  if (loading || !session) {
-    return <div className="grid min-h-dvh place-items-center bg-background"><div className="size-8 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>;
-  }
+  if (loading || !session) return <div className="grid min-h-dvh place-items-center bg-background"><div className="size-8 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>;
 
   return (
     <div className="min-h-dvh bg-background">
@@ -120,7 +112,7 @@ function ShellLayout() {
       <div className="mx-auto min-h-dvh w-full max-w-md px-4 pb-28 pt-3"><Outlet /></div>
       <button onClick={() => setAddOpen(true)} aria-label="Add transaction" className="fixed bottom-[88px] left-1/2 z-30 grid size-12 -translate-x-1/2 place-items-center rounded-full bg-primary text-primary-foreground shadow-md shadow-primary/20 transition-transform active:scale-95"><Plus className="size-6" /></button>
       <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-card/95 backdrop-blur"><div className="mx-auto grid max-w-md grid-cols-5 px-1 pb-[max(env(safe-area-inset-bottom),8px)] pt-2">{NAV.map((item) => { const active = item.to === "/" ? pathname === "/" : pathname === item.to || pathname.startsWith(`${item.to}/`); return <Link key={item.to} to={item.to} className={`flex min-w-0 flex-col items-center gap-1 rounded-xl py-1.5 text-[9px] font-semibold ${active ? "text-primary" : "text-muted-foreground"}`}><item.icon className="size-5" />{item.label}</Link>; })}</div></nav>
-      <TransactionForm open={addOpen} onOpenChange={setAddOpen} />
+      {addOpen && <TransactionForm open onOpenChange={setAddOpen} />}
     </div>
   );
 }

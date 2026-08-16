@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -125,17 +125,43 @@ export function TransactionForm({
     }
   };
 
+  if (!open) return null;
+
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="max-h-[92vh] overflow-y-auto rounded-t-3xl">
-        <SheetHeader>
-          <SheetTitle>{existing ? "Edit transaction" : "New transaction"}</SheetTitle>
-        </SheetHeader>
+    <>
+      <div
+        className="fixed inset-0 z-50 bg-black/70"
+        aria-hidden="true"
+        onClick={() => onOpenChange(false)}
+      />
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="transaction-form-title"
+        className="fixed inset-x-0 bottom-0 z-[51] max-h-[92vh] overflow-y-auto rounded-t-3xl bg-background p-6 shadow-lg"
+      >
+        <button
+          type="button"
+          aria-label="Close"
+          onClick={() => onOpenChange(false)}
+          className="absolute right-4 top-4 rounded-sm p-1 opacity-70 transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring"
+        >
+          <X className="h-4 w-4" />
+          <span className="sr-only">Close</span>
+        </button>
+
+        <div className="flex flex-col space-y-2 text-center sm:text-left">
+          <h2 id="transaction-form-title" className="text-lg font-semibold text-foreground">
+            {existing ? "Edit transaction" : "New transaction"}
+          </h2>
+        </div>
+
         <div className="space-y-4 px-4 pb-8">
           <div className="grid grid-cols-3 gap-1 rounded-2xl bg-secondary p-1">
             {TYPES.map((t) => (
               <button
                 key={t.key}
+                type="button"
                 onClick={() => setType(t.key)}
                 className={`h-10 rounded-xl text-sm font-semibold transition-colors ${
                   type === t.key ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"
@@ -249,8 +275,8 @@ export function TransactionForm({
             {existing ? "Save changes" : "Add transaction"}
           </Button>
         </div>
-      </SheetContent>
-    </Sheet>
+      </div>
+    </>
   );
 }
 

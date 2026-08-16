@@ -1,19 +1,37 @@
-import "./styles.css";
-import { createRoot } from "react-dom/client";
-import { RouterProvider } from "@tanstack/react-router";
-import { getRouter } from "./router";
+import { mountMobileAuth } from "./mobile-auth-vanilla";
 
-const router = getRouter();
-const rootElement = document.getElementById("root");
+const hash = window.location.hash;
+const isAuthHash = hash === "#/auth" || hash.startsWith("#/auth?") || hash === "";
 
-if (!rootElement) {
-  throw new Error("Pocket Ledger mobile root element was not found.");
-}
+async function start() {
+  if (isAuthHash) {
+    mountMobileAuth();
 
-createRoot(rootElement).render(<RouterProvider router={router} />);
+    try {
+      const { supabase } = await import("@/integrations/supabase/client");
+      const { data } = await supabase.auth.getSession();
+      if (data.session) {
+        window.location.hash = "#/";
+        window.location.reload();
+        return;
+      }
+    } catch (error) {
+      console.error("Mobile auth session check failed", error);
+    }
+    return;
+  }
 
-// Native Android hardware back button: navigate back, or exit at the root screen.
-void (async () => {
+  await import("./styles.css");
+  const { createRoot } = await import("react-dom/client");
+  const { RouterProvider } = await import("@tanstack/react-router");
+  const { getRouter } = await import("./router");
+
+  const rootElement = document.getElementById("root");
+  if (!rootElement) throw new Error("Pocket Ledger mobile root element was not found.");
+
+  const router = getRouter();
+  createRoot(rootElement).render(<RouterProvider router={router} />);
+
   try {
     const { Capacitor } = await import("@capacitor/core");
     if (!Capacitor.isNativePlatform()) return;
@@ -23,6 +41,8 @@ void (async () => {
       else void App.exitApp();
     });
   } catch {
-    // Web preview or plugin unavailable — nothing to wire up.
+    // Web preview or plugin unavailable.
   }
-})();
+}
+
+void start();

@@ -110,6 +110,7 @@ function AuthPage() {
 
         <form
           onSubmit={submit}
+          autoComplete="off"
           style={{
             padding: 20,
             borderRadius: 24,
@@ -139,18 +140,18 @@ function AuthPage() {
           {mode === "signup" && (
             <label style={{ display: "block", marginBottom: 16 }}>
               <span style={{ display: "block", marginBottom: 6, fontSize: 12, fontWeight: 600 }}>Name</span>
-              <input ref={nameRef} autoComplete="name" style={fieldStyle} />
+              <input ref={nameRef} autoComplete="off" name="paisa-name" type="text" style={fieldStyle} />
             </label>
           )}
 
           <label style={{ display: "block", marginBottom: 16 }}>
             <span style={{ display: "block", marginBottom: 6, fontSize: 12, fontWeight: 600 }}>Email</span>
-            <input ref={emailRef} type="email" inputMode="email" autoComplete="email" style={fieldStyle} />
+            <input ref={emailRef} type="email" autoComplete="off" name="paisa-email" style={fieldStyle} />
           </label>
 
           <label style={{ display: "block", marginBottom: 16 }}>
             <span style={{ display: "block", marginBottom: 6, fontSize: 12, fontWeight: 600 }}>Password</span>
-            <input ref={passwordRef} type="password" autoComplete={mode === "signup" ? "new-password" : "current-password"} style={fieldStyle} />
+            <input ref={passwordRef} type="password" autoComplete="off" name="paisa-password" style={fieldStyle} />
           </label>
 
           <button type="submit" disabled={busy} style={{ width: "100%", height: 48, border: 0, borderRadius: 12, background: "var(--primary)", color: "var(--primary-foreground)", fontSize: 16, fontWeight: 600 }}>

@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Account, AppData, Budget, Category, Recurring, Transaction } from "./types";
@@ -33,7 +34,7 @@ export function useAppData() {
 
 export function useInvalidateData() {
   const qc = useQueryClient();
-  return () => qc.invalidateQueries({ queryKey: DATA_KEY });
+  return useCallback(() => qc.invalidateQueries({ queryKey: DATA_KEY }), [qc]);
 }
 
 type Table = "accounts" | "categories" | "transactions" | "budgets" | "recurring_transactions";

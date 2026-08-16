@@ -1,34 +1,25 @@
-import { mountMobileAuth } from "./mobile-auth-vanilla";
+import { createRoot } from "react-dom/client";
+import { RouterProvider } from "@tanstack/react-router";
 
 const hash = window.location.hash;
 const isAuthHash = hash === "#/auth" || hash.startsWith("#/auth?") || hash === "";
 
 async function start() {
-  if (isAuthHash) {
-    mountMobileAuth();
-
-    try {
-      const { supabase } = await import("@/integrations/supabase/client");
-      const { data } = await supabase.auth.getSession();
-      if (data.session) {
-        window.location.hash = "#/";
-        window.location.reload();
-        return;
-      }
-    } catch (error) {
-      console.error("Mobile auth session check failed", error);
-    }
-    return;
-  }
-
-  await import("./styles.css");
-  const { createRoot } = await import("react-dom/client");
-  const { RouterProvider } = await import("@tanstack/react-router");
-  const { getRouter } = await import("./router");
-
   const rootElement = document.getElementById("root");
   if (!rootElement) throw new Error("Pocket Ledger mobile root element was not found.");
 
+  if (isAuthHash) {
+    // Keep TanStack Router, but use a tiny router containing only the auth route.
+    // The full application router/providers/charts are not loaded until after login.
+    const { getMobileAuthRouter } = await import("./mobile-auth-router");
+    const router = getMobileAuthRouter();
+    createRoot(rootElement).render(<RouterProvider router={router} />);
+    return;
+  }
+
+  // Authenticated app: load the normal application only after the auth screen.
+  await import("./styles.css");
+  const { getRouter } = await import("./router");
   const router = getRouter();
   createRoot(rootElement).render(<RouterProvider router={router} />);
 

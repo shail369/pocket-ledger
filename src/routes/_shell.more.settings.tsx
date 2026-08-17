@@ -67,17 +67,33 @@ function SettingsPage() {
         },
       };
 
-      const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+      const filename = `paisa-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      const json = JSON.stringify(backup, null, 2);
+      const blob = new Blob([json], { type: "application/json" });
+      const file = new File([blob], filename, { type: "application/json" });
+
+      // Native/mobile WebViews may ignore an anchor download. Use the device share
+      // sheet when file sharing is supported, then fall back to a normal download.
+      const share = navigator.share as ((data?: ShareData) => Promise<void>) | undefined;
+      const canShareFile = typeof navigator.canShare === "function" && navigator.canShare({ files: [file] });
+      if (share && canShareFile) {
+        await share({ title: "Paisa backup", text: "Paisa expense manager backup", files: [file] });
+        toast.success("Backup ready to share/save");
+        return;
+      }
+
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `paisa-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      a.download = filename;
+      a.style.display = "none";
       document.body.appendChild(a);
       a.click();
       a.remove();
       window.setTimeout(() => URL.revokeObjectURL(url), 1000);
       toast.success(`Backup exported: ${accounts.data?.length ?? 0} accounts, ${transactions.data?.length ?? 0} transactions`);
     } catch (error) {
+      if ((error as DOMException).name === "AbortError") return;
       toast.error(`Export failed: ${(error as Error).message}`);
     }
   };

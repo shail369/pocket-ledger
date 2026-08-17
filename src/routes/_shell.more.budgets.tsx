@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ChevronLeft, Plus, Trash2 } from "lucide-react";
+import { ChevronLeft, Plus, Trash2, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { EmptyState, Section } from "@/components/app/pieces";
 import { AppIcon } from "@/components/app/icon";
@@ -27,10 +27,37 @@ function BudgetsPage() {
   const [editing, setEditing] = useState<Budget | null>(null);
   const progress = budgetProgressFixed(data.budgets, data.transactions, data.categories, accountId);
 
+  const openEdit = (budgetId: string) => {
+    // When viewing All Accounts, budgetProgressFixed creates combined display
+    // rows. Always resolve the real database row before opening the editor.
+    const actual = data.budgets.find((b) => b.id === budgetId);
+    if (!actual) {
+      toast.error("Could not find this budget");
+      return;
+    }
+    setEditing(actual);
+    setOpen(true);
+  };
+
+  const deleteBudget = async (budgetId: string) => {
+    const actual = data.budgets.find((b) => b.id === budgetId);
+    if (!actual) {
+      toast.error("Could not find this budget");
+      return;
+    }
+    if (!confirm(`Delete the ${actual.period} budget for ${data.categories.find((c) => c.id === actual.category_id)?.name ?? "overall spending"}?`)) return;
+    try {
+      await remove.mutateAsync(actual.id);
+      toast.success("Budget deleted");
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
+  };
+
   return <div className="space-y-4">
     <header className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2"><Link to="/" className="grid size-9 place-items-center rounded-full bg-secondary"><ChevronLeft className="size-5" /></Link><h1 className="truncate text-lg font-extrabold">Budgets</h1><button onClick={() => { setEditing(null); setOpen(true); }} className="grid size-10 place-items-center rounded-full bg-primary text-primary-foreground" aria-label="Add budget"><Plus className="size-5" /></button></header>
     {progress.length ? progress.map((b) => <Section key={`${b.categoryName}-${b.rangeLabel}-${b.budget.id}`}>
-      <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3"><span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-secondary"><AppIcon name={b.icon} className="size-4" /></span><button className="min-w-0 text-left" onClick={() => { if (accountId === "all") return; setEditing(b.budget); setOpen(true); }}><p className="truncate text-sm font-bold">{b.categoryName}</p><p className="text-[11px] capitalize text-muted-foreground">{b.rangeLabel}{accountId === "all" ? " · Combined" : ""}</p></button><button onClick={async () => { if (accountId === "all") { toast.error("Select an account before deleting a budget"); return; } if (!confirm("Delete this budget?")) return; await remove.mutateAsync(b.budget.id); toast.success("Budget deleted"); }} className="grid size-9 place-items-center rounded-xl bg-secondary text-expense" aria-label="Delete budget"><Trash2 className="size-4" /></button></div>
+      <div className="grid grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-2"><span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-secondary"><AppIcon name={b.icon} className="size-4" /></span><button className="min-w-0 text-left" onClick={() => openEdit(b.budget.id)}><p className="truncate text-sm font-bold">{b.categoryName}</p><p className="text-[11px] capitalize text-muted-foreground">{b.rangeLabel}{accountId === "all" && b.budget.account_id === null ? " · Combined" : ""}</p></button><button onClick={() => openEdit(b.budget.id)} className="grid size-9 place-items-center rounded-xl bg-secondary text-muted-foreground" aria-label="Edit budget"><Pencil className="size-4" /></button><button onClick={() => void deleteBudget(b.budget.id)} className="grid size-9 place-items-center rounded-xl bg-secondary text-expense" aria-label="Delete budget"><Trash2 className="size-4" /></button></div>
       <Progress value={Math.min(100, b.percent)} className={`mt-3 h-2 ${b.state === "over" ? "[&>div]:bg-expense" : b.state === "warning" ? "[&>div]:bg-warning" : ""}`} />
       <div className="mt-1.5 flex items-center justify-between text-[11px] text-muted-foreground"><span className="tabular">{formatMoney(b.spent, currency)} of {formatMoney(Number(b.budget.amount), currency)}</span><span className={b.remaining < 0 ? "font-bold text-expense" : ""}>{b.remaining < 0 ? `${formatMoney(Math.abs(b.remaining), currency)} over` : `${formatMoney(b.remaining, currency)} left`}</span></div>
     </Section>) : <Section><EmptyState text={accountId === "all" ? "No account-specific budgets yet. Select an account to create one." : "No budgets yet. Tap + to create one."} /></Section>}

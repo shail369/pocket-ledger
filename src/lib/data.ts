@@ -5,21 +5,43 @@ import type { Account, AppData, Budget, Category, Recurring, Transaction } from 
 
 export const DATA_KEY = ["wallet-data"];
 
+async function fetchAllTransactions(): Promise<Transaction[]> {
+  const pageSize = 1000;
+  const rows: Transaction[] = [];
+  let from = 0;
+
+  while (true) {
+    const { data, error } = await supabase
+      .from("transactions")
+      .select("*")
+      .order("date", { ascending: false })
+      .order("created_at", { ascending: false })
+      .range(from, from + pageSize - 1);
+    if (error) throw error;
+
+    const page = (data ?? []) as unknown as Transaction[];
+    rows.push(...page);
+    if (page.length < pageSize) break;
+    from += pageSize;
+  }
+
+  return rows;
+}
+
 async function fetchAppData(): Promise<AppData> {
-  const transactionLimit = import.meta.env['VITE_MOBILE'] === "true" ? 1500 : 5000;
   const [accounts, categories, transactions, budgets, recurring] = await Promise.all([
     supabase.from("accounts").select("*").order("created_at"),
     supabase.from("categories").select("*").order("name"),
-    supabase.from("transactions").select("*").order("date", { ascending: false }).limit(transactionLimit),
+    fetchAllTransactions(),
     supabase.from("budgets").select("*").order("created_at"),
     supabase.from("recurring_transactions").select("*").order("next_occurrence"),
   ]);
-  const err = accounts.error || categories.error || transactions.error || budgets.error || recurring.error;
+  const err = accounts.error || categories.error || budgets.error || recurring.error;
   if (err) throw err;
   return {
     accounts: (accounts.data ?? []) as unknown as Account[],
     categories: (categories.data ?? []) as unknown as Category[],
-    transactions: (transactions.data ?? []) as unknown as Transaction[],
+    transactions,
     budgets: (budgets.data ?? []) as unknown as Budget[],
     recurring: (recurring.data ?? []) as unknown as Recurring[],
   };
@@ -60,9 +82,7 @@ export function useUpsert(table: Table) {
         const key = table === "recurring_transactions" ? "recurring" : table;
         const rows = current[key as keyof AppData] as unknown as Record<string, unknown>[];
         const index = rows.findIndex((r) => String(r.id) === id);
-        const nextRows = index >= 0
-          ? rows.map((r, i) => (i === index ? saved : r))
-          : [saved, ...rows];
+        const nextRows = index >= 0 ? rows.map((r, i) => (i === index ? saved : r)) : [saved, ...rows];
         return { ...current, [key]: nextRows } as AppData;
       });
     },

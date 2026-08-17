@@ -127,7 +127,7 @@ function CategoriesPage() {
                     ))}
                   </div>
                 ) : (
-                  <p className="px-4 py-3 text-[11px] text-muted-foreground">No subcategories. Use Edit or Add to create one.</p>
+                  <p className="px-4 py-3 text-[11px] text-muted-foreground">No subcategories. Use Edit to create one.</p>
                 )}
               </Section>
             );
@@ -149,10 +149,15 @@ function CategoryForm({ open, onOpenChange, existing }: { open: boolean; onOpenC
   const [kind, setKind] = useState("expense");
   const [parent, setParent] = useState(NONE);
   const [icon, setIcon] = useState("tag");
+  const [newSubcategory, setNewSubcategory] = useState("");
+  const [addingSubcategory, setAddingSubcategory] = useState(false);
 
   const parents = data.categories.filter((c) => !c.parent_id && c.kind === kind && c.id !== existing?.id);
   const isEditing = Boolean(existing);
   const isSubcategory = Boolean(existing?.parent_id);
+  const existingChildren = existing && !isSubcategory
+    ? data.categories.filter((c) => c.parent_id === existing.id)
+    : [];
 
   useEffect(() => {
     if (!open) return;
@@ -167,6 +172,8 @@ function CategoryForm({ open, onOpenChange, existing }: { open: boolean; onOpenC
       setParent(NONE);
       setIcon("tag");
     }
+    setNewSubcategory("");
+    setAddingSubcategory(false);
   }, [open, existing]);
 
   const submit = async () => {
@@ -184,6 +191,33 @@ function CategoryForm({ open, onOpenChange, existing }: { open: boolean; onOpenC
       });
       toast.success(isEditing ? "Category updated" : "Category added");
       onOpenChange(false);
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
+  };
+
+  const addSubcategory = async () => {
+    const subcategoryName = newSubcategory.trim();
+    if (!existing || isSubcategory) return;
+    if (!subcategoryName) {
+      toast.error("Subcategory name is required");
+      return;
+    }
+    if (existingChildren.some((c) => c.name.trim().toLowerCase() === subcategoryName.toLowerCase())) {
+      toast.error("A subcategory with this name already exists");
+      return;
+    }
+
+    try {
+      await upsert.mutateAsync({
+        name: subcategoryName,
+        kind: existing.kind,
+        parent_id: existing.id,
+        icon: "tag",
+      });
+      setNewSubcategory("");
+      setAddingSubcategory(false);
+      toast.success("Subcategory added");
     } catch (e) {
       toast.error((e as Error).message);
     }
@@ -218,6 +252,54 @@ function CategoryForm({ open, onOpenChange, existing }: { open: boolean; onOpenC
                   {parents.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                 </SelectContent>
               </Select>
+            </div>
+          )}
+
+          {isEditing && !isSubcategory && (
+            <div className="space-y-2 rounded-2xl border border-border/60 bg-secondary/30 p-3">
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <Label className="text-xs font-semibold">Subcategories</Label>
+                  <p className="mt-0.5 text-[10px] text-muted-foreground">Add a subcategory directly under {existing.name}.</p>
+                </div>
+                {!addingSubcategory && (
+                  <Button type="button" variant="secondary" size="sm" className="h-8 shrink-0 rounded-lg px-2.5 text-xs" onClick={() => setAddingSubcategory(true)}>
+                    <Plus className="size-3.5" /> Add
+                  </Button>
+                )}
+              </div>
+
+              {existingChildren.length > 0 && (
+                <div className="space-y-1.5">
+                  {existingChildren.map((child) => (
+                    <div key={child.id} className="flex items-center gap-2 rounded-xl bg-card px-3 py-2">
+                      <span className="grid size-7 shrink-0 place-items-center rounded-lg bg-secondary text-muted-foreground">
+                        <AppIcon name={child.icon} className="size-3" />
+                      </span>
+                      <span className="min-w-0 flex-1 truncate text-xs font-medium">{child.name}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {addingSubcategory && (
+                <div className="flex items-center gap-2">
+                  <Input
+                    autoFocus
+                    value={newSubcategory}
+                    onChange={(e) => setNewSubcategory(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") void addSubcategory(); }}
+                    placeholder="Subcategory name"
+                    className="h-10 min-w-0 flex-1 rounded-xl bg-card"
+                  />
+                  <Button type="button" className="h-10 rounded-xl px-3 text-xs" onClick={() => void addSubcategory()} disabled={upsert.isPending}>
+                    Add
+                  </Button>
+                  <Button type="button" variant="ghost" className="h-10 rounded-xl px-2 text-xs" onClick={() => { setAddingSubcategory(false); setNewSubcategory(""); }}>
+                    Cancel
+                  </Button>
+                </div>
+              )}
             </div>
           )}
 

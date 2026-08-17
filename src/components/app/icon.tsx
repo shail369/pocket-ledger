@@ -1,23 +1,21 @@
 import {
+  Activity,
   Banknote,
   Briefcase,
   Car,
   CircleEllipsis,
-  CirclePlus,
   Clapperboard,
-  CreditCard,
   GraduationCap,
   HeartPulse,
   Home,
   Landmark,
   Laptop,
-  PiggyBank,
+  PartyPopper,
+  Plane,
   Receipt,
   ShoppingBag,
-  Smartphone,
-  Tag,
+  Trophy,
   Utensils,
-  Wallet,
   type LucideIcon,
 } from "lucide-react";
 
@@ -33,19 +31,19 @@ export const ICONS: Record<string, LucideIcon> = {
   "circle-ellipsis": CircleEllipsis,
   briefcase: Briefcase,
   laptop: Laptop,
-  "piggy-bank": PiggyBank,
-  "circle-plus": CirclePlus,
-  tag: Tag,
-  wallet: Wallet,
+  "piggy-bank": Trophy,
+  tag: Receipt,
   landmark: Landmark,
   banknote: Banknote,
-  smartphone: Smartphone,
-  "credit-card": CreditCard,
+  flight: Plane,
+  outing: PartyPopper,
+  sports: Trophy,
+  activities: Activity,
 };
 
 export const ICON_OPTIONS = Object.keys(ICONS);
 
 export function AppIcon({ name, className }: { name?: string | null | undefined; className?: string | undefined }) {
-  const Cmp = ICONS[name ?? "tag"] ?? Tag;
+  const Cmp = ICONS[name ?? "tag"] ?? Receipt;
   return <Cmp className={className} />;
 }

@@ -20,44 +20,13 @@ export const Route = createFileRoute("/_shell/more/budgets")({ head: () => ({ me
 const OVERALL = "__overall__";
 
 function BudgetsPage() {
-  const { data } = useAppData();
-  const { accountId, currency } = useAppState();
-  const remove = useRemove("budgets");
-  const [open, setOpen] = useState(false);
-  const [editing, setEditing] = useState<Budget | null>(null);
-  const progress = budgetProgressFixed(data.budgets, data.transactions, data.categories, accountId);
-
-  const openEdit = (budgetId: string) => {
-    // When viewing All Accounts, budgetProgressFixed creates combined display
-    // rows. Always resolve the real database row before opening the editor.
-    const actual = data.budgets.find((b) => b.id === budgetId);
-    if (!actual) {
-      toast.error("Could not find this budget");
-      return;
-    }
-    setEditing(actual);
-    setOpen(true);
-  };
-
-  const deleteBudget = async (budgetId: string) => {
-    const actual = data.budgets.find((b) => b.id === budgetId);
-    if (!actual) {
-      toast.error("Could not find this budget");
-      return;
-    }
-    if (!confirm(`Delete the ${actual.period} budget for ${data.categories.find((c) => c.id === actual.category_id)?.name ?? "overall spending"}?`)) return;
-    try {
-      await remove.mutateAsync(actual.id);
-      toast.success("Budget deleted");
-    } catch (e) {
-      toast.error((e as Error).message);
-    }
-  };
-
+  const { data } = useAppData(); const { accountId, currency } = useAppState(); const remove = useRemove("budgets"); const [open, setOpen] = useState(false); const [editing, setEditing] = useState<Budget | null>(null); const progress = budgetProgressFixed(data.budgets, data.transactions, data.categories, accountId);
+  const openEdit = (budgetId: string) => { const actual = data.budgets.find((b) => b.id === budgetId); if (!actual) { toast.error("Could not find this budget"); return; } setEditing(actual); setOpen(true); };
+  const deleteBudget = async (budgetId: string) => { const actual = data.budgets.find((b) => b.id === budgetId); if (!actual) { toast.error("Could not find this budget"); return; } if (!confirm(`Delete the ${actual.period} budget?`)) return; try { await remove.mutateAsync(actual.id); toast.success("Budget deleted"); } catch (e) { toast.error((e as Error).message); } };
   return <div className="space-y-4">
     <header className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2"><Link to="/" className="grid size-9 place-items-center rounded-full bg-secondary"><ChevronLeft className="size-5" /></Link><h1 className="truncate text-lg font-extrabold">Budgets</h1><button onClick={() => { setEditing(null); setOpen(true); }} className="grid size-10 place-items-center rounded-full bg-primary text-primary-foreground" aria-label="Add budget"><Plus className="size-5" /></button></header>
-    {progress.length ? progress.map((b) => <Section key={`${b.categoryName}-${b.rangeLabel}-${b.budget.id}`}>
-      <div className="grid grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-2"><span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-secondary"><AppIcon name={b.icon} className="size-4" /></span><button className="min-w-0 text-left" onClick={() => openEdit(b.budget.id)}><p className="truncate text-sm font-bold">{b.categoryName}</p><p className="text-[11px] capitalize text-muted-foreground">{b.rangeLabel}{accountId === "all" && b.budget.account_id === null ? " · Combined" : ""}</p></button><button onClick={() => openEdit(b.budget.id)} className="grid size-9 place-items-center rounded-xl bg-secondary text-muted-foreground" aria-label="Edit budget"><Pencil className="size-4" /></button><button onClick={() => void deleteBudget(b.budget.id)} className="grid size-9 place-items-center rounded-xl bg-secondary text-expense" aria-label="Delete budget"><Trash2 className="size-4" /></button></div>
+    {progress.length ? progress.map((b) => <Section key={`${b.categoryName}-${b.budget.id}`}>
+      <div className="grid grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-2"><span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-secondary"><AppIcon name={b.icon} className="size-4" /></span><button className="min-w-0 text-left" onClick={() => openEdit(b.budget.id)}><p className="truncate text-sm font-bold">{b.categoryName}</p><p className="text-[11px] capitalize text-muted-foreground">{b.budget.period}</p></button><button onClick={() => openEdit(b.budget.id)} className="grid size-9 place-items-center rounded-xl bg-secondary text-muted-foreground" aria-label="Edit budget"><Pencil className="size-4" /></button><button onClick={() => void deleteBudget(b.budget.id)} className="grid size-9 place-items-center rounded-xl bg-secondary text-expense" aria-label="Delete budget"><Trash2 className="size-4" /></button></div>
       <Progress value={Math.min(100, b.percent)} className={`mt-3 h-2 ${b.state === "over" ? "[&>div]:bg-expense" : b.state === "warning" ? "[&>div]:bg-warning" : ""}`} />
       <div className="mt-1.5 flex items-center justify-between text-[11px] text-muted-foreground"><span className="tabular">{formatMoney(b.spent, currency)} of {formatMoney(Number(b.budget.amount), currency)}</span><span className={b.remaining < 0 ? "font-bold text-expense" : ""}>{b.remaining < 0 ? `${formatMoney(Math.abs(b.remaining), currency)} over` : `${formatMoney(b.remaining, currency)} left`}</span></div>
     </Section>) : <Section><EmptyState text={accountId === "all" ? "No account-specific budgets yet. Select an account to create one." : "No budgets yet. Tap + to create one."} /></Section>}
@@ -66,8 +35,7 @@ function BudgetsPage() {
 }
 
 function BudgetForm({ open, onOpenChange, existing, selectedAccountId }: { open: boolean; onOpenChange: (v: boolean) => void; existing?: Budget | null; selectedAccountId: string }) {
-  const { data } = useAppData(); const upsert = useUpsert("budgets");
-  const [category, setCategory] = useState(OVERALL); const [account, setAccount] = useState(""); const [amount, setAmount] = useState(""); const [period, setPeriod] = useState("monthly");
+  const { data } = useAppData(); const upsert = useUpsert("budgets"); const [category, setCategory] = useState(OVERALL); const [account, setAccount] = useState(""); const [amount, setAmount] = useState(""); const [period, setPeriod] = useState("monthly");
   useEffect(() => { if (!open) return; setCategory(existing?.category_id ?? OVERALL); setAccount(existing?.account_id ?? (selectedAccountId === "all" ? "" : selectedAccountId)); setAmount(existing ? String(existing.amount) : ""); setPeriod(existing?.period ?? "monthly"); }, [open, existing, selectedAccountId]);
   const parents = data.categories.filter((c) => !c.parent_id);
   const submit = async () => { if (!account) { toast.error("Select an account for this budget"); return; } if (!amount || Number(amount) <= 0) { toast.error("Enter a budget amount"); return; } try { await upsert.mutateAsync({ ...(existing ? { id: existing.id } : {}), category_id: category === OVERALL ? null : category, account_id: account, amount: Number(amount).toFixed(2), period, start_date: existing?.start_date ?? new Date().toISOString().slice(0, 10) }); toast.success(existing ? "Budget updated" : "Budget created"); onOpenChange(false); } catch (e) { toast.error((e as Error).message); } };

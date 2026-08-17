@@ -1,19 +1,8 @@
 import { lazy, Suspense, createContext, useContext, useEffect, useMemo, useState, type ComponentType, type MouseEvent, type ReactNode } from "react";
 
-type RouteOptions = {
-  component: ComponentType<any>;
-  head?: unknown;
-  shellComponent?: ComponentType<any>;
-  notFoundComponent?: ComponentType<any>;
-  errorComponent?: ComponentType<any>;
-};
-
+type RouteOptions = { component: ComponentType<any>; head?: unknown; shellComponent?: ComponentType<any>; notFoundComponent?: ComponentType<any>; errorComponent?: ComponentType<any> };
 type NavigateTarget = string | { to: string; params?: Record<string, string | number> };
-
-type MobileRouterContextValue = {
-  pathname: string;
-  navigate: (target: NavigateTarget) => void;
-};
+type MobileRouterContextValue = { pathname: string; navigate: (target: NavigateTarget) => void };
 
 const MobileRouterContext = createContext<MobileRouterContextValue | null>(null);
 
@@ -26,9 +15,7 @@ function currentPathname() {
 function resolveTarget(target: NavigateTarget) {
   if (typeof target === "string") return target;
   let path = target.to;
-  for (const [key, value] of Object.entries(target.params ?? {})) {
-    path = path.replace(`$${key}`, encodeURIComponent(String(value)));
-  }
+  for (const [key, value] of Object.entries(target.params ?? {})) path = path.replace(`$${key}`, encodeURIComponent(String(value)));
   return path;
 }
 
@@ -47,20 +34,13 @@ export function useRouterState<T>({ select }: { select: (state: { location: { pa
 export function Link({ to, params, onClick, children, ...props }: any) {
   const navigate = useNavigate();
   const href = `#${resolveTarget({ to, params })}`;
-
   return (
-    <a
-      {...props}
-      href={href}
-      onClick={(event: MouseEvent<HTMLAnchorElement>) => {
-        onClick?.(event);
-        if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-        event.preventDefault();
-        navigate({ to, params });
-      }}
-    >
-      {children}
-    </a>
+    <a {...props} href={href} onClick={(event: MouseEvent<HTMLAnchorElement>) => {
+      onClick?.(event);
+      if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      event.preventDefault();
+      navigate({ to, params });
+    }}>{children}</a>
   );
 }
 
@@ -86,6 +66,7 @@ const Accounts = lazy(() => import("./routes/_shell.accounts.index").then((m) =>
 const AccountDetail = lazy(() => import("./routes/_shell.accounts.$accountId").then((m) => ({ default: m.Route.component })));
 const More = lazy(() => import("./routes/_shell.more.index").then((m) => ({ default: m.Route.component })));
 const Budgets = lazy(() => import("./routes/_shell.more.budgets").then((m) => ({ default: m.Route.component })));
+const Categories = lazy(() => import("./routes/_shell.more.categories").then((m) => ({ default: m.Route.component })));
 const Recurring = lazy(() => import("./routes/_shell.more.recurring").then((m) => ({ default: m.Route.component })));
 const Reports = lazy(() => import("./routes/_shell.more.reports").then((m) => ({ default: m.Route.component })));
 const Settings = lazy(() => import("./routes/_shell.more.settings").then((m) => ({ default: m.Route.component })));
@@ -98,6 +79,7 @@ function componentForPath(pathname: string) {
   if (/^\/accounts\/[^/]+\/?$/.test(pathname)) return AccountDetail;
   if (pathname === "/more" || pathname === "/more/") return More;
   if (pathname === "/more/budgets") return Budgets;
+  if (pathname === "/more/categories") return Categories;
   if (pathname === "/more/recurring") return Recurring;
   if (pathname === "/more/reports") return Reports;
   if (pathname === "/more/settings") return Settings;
@@ -108,34 +90,17 @@ export function Outlet() {
   const context = useContext(MobileRouterContext);
   const pathname = context?.pathname ?? "/";
   const Component = useMemo(() => componentForPath(pathname), [pathname]);
-
-  return (
-    <Suspense fallback={<div className="grid min-h-[50vh] place-items-center"><div className="size-7 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>}>
-      <Component />
-    </Suspense>
-  );
+  return <Suspense fallback={<div className="grid min-h-[50vh] place-items-center"><div className="size-7 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>}><Component /></Suspense>;
 }
 
 export function MobileRouterProvider({ children }: { children: ReactNode }) {
   const [pathname, setPathname] = useState(currentPathname);
-
   useEffect(() => {
     const update = () => setPathname(currentPathname());
     window.addEventListener("hashchange", update);
     window.addEventListener("popstate", update);
-    return () => {
-      window.removeEventListener("hashchange", update);
-      window.removeEventListener("popstate", update);
-    };
+    return () => { window.removeEventListener("hashchange", update); window.removeEventListener("popstate", update); };
   }, []);
-
-  const value = useMemo<MobileRouterContextValue>(() => ({
-    pathname,
-    navigate: (target) => {
-      const next = resolveTarget(target) || "/";
-      if (next !== pathname) window.location.hash = `#${next}`;
-    },
-  }), [pathname]);
-
+  const value = useMemo<MobileRouterContextValue>(() => ({ pathname, navigate: (target) => { const next = resolveTarget(target) || "/"; if (next !== pathname) window.location.hash = `#${next}`; } }), [pathname]);
   return <MobileRouterContext.Provider value={value}>{children}</MobileRouterContext.Provider>;
 }

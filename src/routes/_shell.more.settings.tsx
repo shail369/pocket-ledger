@@ -101,6 +101,9 @@ function SettingsPage() {
   const importJson = async (file: File) => {
     setImporting(true);
     try {
+      const userId = session?.user.id;
+      if (!userId) throw new Error("You must be signed in to import a backup");
+
       const text = await file.text();
       const parsed = JSON.parse(text) as Partial<BackupFile> & { data?: Partial<AppData> };
       if (parsed.format !== "paisa-backup" || parsed.version !== 1 || !parsed.data) {
@@ -133,6 +136,7 @@ function SettingsPage() {
         const id = crypto.randomUUID();
         const { error } = await supabase.from("accounts").insert({
           id,
+          user_id: userId,
           name: account.name,
           type: account.type,
           opening_balance: account.opening_balance,
@@ -158,6 +162,7 @@ function SettingsPage() {
         const id = crypto.randomUUID();
         const { error } = await supabase.from("categories").insert({
           id,
+          user_id: userId,
           name: category.name,
           parent_id: mappedParent,
           icon: category.icon,
@@ -172,6 +177,7 @@ function SettingsPage() {
       const transactionRows = importedTransactions
         .map((tx) => ({
           id: crypto.randomUUID(),
+          user_id: userId,
           account_id: accountMap.get(tx.account_id),
           transfer_account_id: tx.transfer_account_id ? accountMap.get(tx.transfer_account_id) ?? null : null,
           category_id: tx.category_id ? categoryMap.get(tx.category_id) ?? null : null,
@@ -189,6 +195,7 @@ function SettingsPage() {
       const budgetRows = (budgets as Budget[])
         .map((budget) => ({
           id: crypto.randomUUID(),
+          user_id: userId,
           category_id: budget.category_id ? categoryMap.get(budget.category_id) ?? null : null,
           account_id: budget.account_id ? accountMap.get(budget.account_id) ?? null : null,
           amount: budget.amount,
@@ -202,6 +209,7 @@ function SettingsPage() {
       const recurringRows = (recurring as Recurring[])
         .map((item) => ({
           id: crypto.randomUUID(),
+          user_id: userId,
           account_id: accountMap.get(item.account_id),
           category_id: item.category_id ? categoryMap.get(item.category_id) ?? null : null,
           amount: item.amount,

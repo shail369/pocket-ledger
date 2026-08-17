@@ -11,14 +11,11 @@ function scoped(tx: Transaction[], accountId: string) { return accountId === "al
 function amount(rows: Transaction[]) { return rows.reduce((sum, t) => sum + Number(t.amount), 0); }
 function rangeForMonth(month: Date) { return { from: startOfMonth(month), to: endOfMonth(month), label: format(month, "MMMM yyyy") }; }
 
-export function calculateBudgetProgress(budget: Budget, txs: Transaction[], categories: Category, reference = new Date(), monthOverride?: Date): BudgetProgress;
-export function calculateBudgetProgress(budget: Budget, txs: Transaction[], categories: Category[], reference?: Date, monthOverride?: Date): BudgetProgress;
-export function calculateBudgetProgress(budget: Budget, txs: Transaction[], categories: Category | Category[], reference = new Date(), monthOverride?: Date): BudgetProgress {
-  const categoryList = Array.isArray(categories) ? categories : [categories];
+export function calculateBudgetProgress(budget: Budget, txs: Transaction[], categories: Category[], reference = new Date(), monthOverride?: Date): BudgetProgress {
   const month = monthOverride ?? parseISO(budget.start_date);
   const range = rangeForMonth(month);
   const rows = scoped(txs, budget.account_id ?? "all").filter((t) => t.type === "expense" && inRange(t, range.from, range.to));
-  const ids = budget.category_id ? new Set([budget.category_id, ...categoryList.filter((c) => c.parent_id === budget.category_id).map((c) => c.id)]) : null;
+  const ids = budget.category_id ? new Set([budget.category_id, ...categories.filter((c) => c.parent_id === budget.category_id).map((c) => c.id)]) : null;
   const spent = amount(rows.filter((t) => !ids || (t.category_id && ids.has(t.category_id))));
   const budgetAmount = Number(budget.amount);
   const now = reference;
@@ -26,14 +23,14 @@ export function calculateBudgetProgress(budget: Budget, txs: Transaction[], cate
   const current = range.from <= now && now <= range.to;
   const elapsed = current ? Math.min(totalDays, Math.max(1, differenceInCalendarDays(now, range.from) + 1)) : totalDays;
   const projected = current ? (spent / elapsed) * totalDays : spent;
-  const cat = budget.category_id ? categoryList.find((c) => c.id === budget.category_id) : undefined;
+  const cat = budget.category_id ? categories.find((c) => c.id === budget.category_id) : undefined;
   return { budget, categoryName: cat?.name ?? "Overall budget", icon: cat?.icon ?? "wallet", spent, remaining: budgetAmount - spent, percent: budgetAmount > 0 ? (spent / budgetAmount) * 100 : 0, state: status(spent, budgetAmount), projected, projectedState: status(projected, budgetAmount), rangeLabel: range.label };
 }
 
 export function budgetProgressFixed(budgets: Budget[], txs: Transaction[], categories: Category[], accountId: string): BudgetProgress[] {
   const source = budgets.filter((b) => b.account_id && (accountId === "all" || b.account_id === accountId));
-  // Keep each real budget as its own row. This is important because every row
-  // must remain directly editable/deletable, including when All Accounts is selected.
+  // Keep every real budget as its own row. This makes every budget directly
+  // editable/deletable even when All Accounts is selected.
   return source.map((b) => calculateBudgetProgress(b, txs, categories)).sort((a, b) => b.percent - a.percent);
 }
 

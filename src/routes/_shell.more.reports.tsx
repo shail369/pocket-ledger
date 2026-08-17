@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { format, parseISO } from "date-fns";
-import { ChevronLeft, Download } from "lucide-react";
+import { ChevronLeft, Download, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
 import { EmptyState, Section } from "@/components/app/pieces";
 import { MonthlyComparisonChart } from "@/components/app/charts";
@@ -11,71 +11,29 @@ import { useAppData } from "@/lib/data";
 import { useAppState } from "@/lib/app-state";
 import { formatMoney, percent } from "@/lib/format";
 import { categoryBreakdown, monthlySeries, scopeTransactions } from "@/lib/finance";
+import { monthlyBudgetReport } from "@/lib/budget-analysis";
 
-export const Route = createFileRoute("/_shell/more/reports")({
-  head: () => ({ meta: [{ title: "Reports — Paisa Expense Manager" }, { name: "description", content: "Monthly and category reports scoped to the selected account." }] }),
-  component: ReportsPage,
-});
-
-const TABS = ["monthly", "category"] as const;
+export const Route = createFileRoute("/_shell/more/reports")({ head: () => ({ meta: [{ title: "Reports — Paisa Expense Manager" }, { name: "description", content: "Monthly, category and budget reports scoped to the selected account." }] }), component: ReportsPage });
+const TABS = ["monthly", "budget", "category"] as const;
 type Tab = (typeof TABS)[number];
 
 function ReportsPage() {
-  const { data } = useAppData();
-  const { accountId, currency } = useAppState();
-  const [tab, setTab] = useState<Tab>("monthly");
+  const { data } = useAppData(); const { accountId, currency } = useAppState(); const [tab, setTab] = useState<Tab>("monthly");
+  const [expandedMonth, setExpandedMonth] = useState<string | null>(null);
   const scoped = useMemo(() => scopeTransactions(data.transactions, accountId), [data.transactions, accountId]);
-  const months = monthlySeries(scoped, 6);
-  const thisYear = String(new Date().getFullYear());
-  const yearTx = scoped.filter((t) => t.date.startsWith(thisYear));
-  const nodes = categoryBreakdown(yearTx, data.categories);
+  const months = monthlySeries(scoped, 6); const thisYear = String(new Date().getFullYear()); const yearTx = scoped.filter((t) => t.date.startsWith(thisYear)); const nodes = categoryBreakdown(yearTx, data.categories);
+  const budgetMonths = useMemo(() => monthlyBudgetReport(data.budgets, data.transactions, data.categories, accountId), [data.budgets, data.transactions, data.categories, accountId]);
 
-  const exportCsv = () => {
-    const rows = [["date", "description", "type", "amount", "account", "category"], ...scoped.map((t) => [t.date, `"${t.description.replace(/"/g, '""')}"`, t.type, String(t.amount), `"${data.accounts.find((a) => a.id === t.account_id)?.name ?? ""}"`, `"${data.categories.find((c) => c.id === t.category_id)?.name ?? ""}"`])];
-    const blob = new Blob([rows.map((r) => r.join(",")).join("\n")], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `transactions-${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success("CSV exported");
-  };
+  const exportCsv = () => { const rows = [["date", "description", "type", "amount", "account", "category"], ...scoped.map((t) => [t.date, `"${t.description.replace(/"/g, '""')}"`, t.type, String(t.amount), `"${data.accounts.find((a) => a.id === t.account_id)?.name ?? ""}"`, `"${data.categories.find((c) => c.id === t.category_id)?.name ?? ""}"`])]; const blob = new Blob([rows.map((r) => r.join(",")).join("\n")], { type: "text/csv" }); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = `transactions-${new Date().toISOString().slice(0, 10)}.csv`; a.click(); URL.revokeObjectURL(url); toast.success("CSV exported"); };
 
-  return (
-    <div className="space-y-4">
-      <header className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2">
-        <Link to="/" className="grid size-9 place-items-center rounded-full bg-secondary"><ChevronLeft className="size-5" /></Link>
-        <h1 className="truncate text-lg font-extrabold">Reports</h1>
-        <Button variant="secondary" className="h-10 rounded-xl" onClick={exportCsv}><Download className="size-4" /> CSV</Button>
-      </header>
+  return <div className="space-y-4">
+    <header className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2"><Link to="/" className="grid size-9 place-items-center rounded-full bg-secondary"><ChevronLeft className="size-5" /></Link><h1 className="truncate text-lg font-extrabold">Reports</h1><Button variant="secondary" className="h-10 rounded-xl" onClick={exportCsv}><Download className="size-4" /> CSV</Button></header>
+    <div className="no-scrollbar flex gap-2 overflow-x-auto">{TABS.map((t) => <button key={t} onClick={() => setTab(t)} className={`h-9 shrink-0 rounded-full px-4 text-xs font-semibold capitalize ${tab === t ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"}`}>{t === "budget" ? "Budget" : t}</button>)}</div>
 
-      <div className="no-scrollbar flex gap-2 overflow-x-auto">
-        {TABS.map((t) => <button key={t} onClick={() => setTab(t)} className={`h-9 shrink-0 rounded-full px-4 text-xs font-semibold capitalize ${tab === t ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"}`}>{t}</button>)}
-      </div>
+    {tab === "monthly" && <><Section title="Income vs expenses" subtitle="Last 6 months"><MonthlyComparisonChart data={months} /></Section><Section title="Monthly summary"><ul className="divide-y divide-border/60">{[...months].reverse().map((m) => { const net = m.income - m.expense; return <li key={m.key} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 py-3"><span className="truncate text-sm font-semibold">{format(parseISO(`${m.key}-01`), "MMMM yyyy")}</span><span className={`tabular text-sm font-semibold ${net >= 0 ? "text-income" : "text-expense"}`}>{net >= 0 ? "+" : "−"}{formatMoney(Math.abs(net), currency)}</span></li>; })}</ul></Section></>}
 
-      {tab === "monthly" && <>
-        <Section title="Income vs expenses" subtitle="Last 6 months"><MonthlyComparisonChart data={months} /></Section>
-        <Section title="Monthly summary">
-          <ul className="divide-y divide-border/60">
-            {[...months].reverse().map((m) => {
-              const net = m.income - m.expense;
-              return (
-                <li key={m.key} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 py-3">
-                  <span className="truncate text-sm font-semibold">{format(parseISO(`${m.key}-01`), "MMMM yyyy")}</span>
-                  <span className={`tabular text-sm font-semibold ${net >= 0 ? "text-income" : "text-expense"}`}>
-                    {net >= 0 ? "+" : "−"}{formatMoney(Math.abs(net), currency)}
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
-        </Section>
-      </>}
+    {tab === "budget" && <Section title="Monthly budget performance" subtitle="Every month with a monthly budget"><div className="space-y-2">{budgetMonths.length ? budgetMonths.map((month) => { const open = expandedMonth === month.key; return <div key={month.key} className="overflow-hidden rounded-2xl bg-secondary/50 ring-1 ring-border/50"><button onClick={() => setExpandedMonth(open ? null : month.key)} className="w-full p-3 text-left"><div className="flex items-center gap-2"><div className="min-w-0 flex-1"><p className="text-sm font-bold">{month.label}</p><p className="text-[11px] text-muted-foreground">Overall · {formatMoney(month.overall.spent, currency)} spent of {formatMoney(month.overall.budget, currency)}</p></div><span className={`shrink-0 rounded-full px-2 py-1 text-[10px] font-bold ${month.overall.state === "over" ? "bg-expense-soft text-expense" : month.overall.state === "warning" ? "bg-warning/15 text-warning" : "bg-income-soft text-income"}`}>{month.overall.state === "over" ? "Over budget" : month.overall.state === "warning" ? "Near limit" : "Within budget"}</span>{open ? <ChevronUp className="size-4 text-muted-foreground" /> : <ChevronDown className="size-4 text-muted-foreground" />}</div><div className="mt-2 h-2 overflow-hidden rounded-full bg-background"><div className={`h-full ${month.overall.state === "over" ? "bg-expense" : month.overall.state === "warning" ? "bg-warning" : "bg-income"}`} style={{ width: `${Math.min(100, month.overall.percent)}%` }} /></div><div className="mt-1 flex justify-between text-[10px] text-muted-foreground"><span>{month.overall.percent.toFixed(0)}% used</span><span>{month.overall.remaining < 0 ? `${formatMoney(Math.abs(month.overall.remaining), currency)} over` : `${formatMoney(month.overall.remaining, currency)} left`}</span></div></button>{open && <div className="border-t border-border/50 bg-card/70 p-3"><p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Individual budgets</p>{month.categories.length ? <div className="space-y-2">{month.categories.map((item) => <div key={item.budget.id} className="flex items-center gap-2 rounded-xl bg-secondary/60 p-2.5"><span className="grid size-8 shrink-0 place-items-center rounded-lg bg-secondary"><AppIcon name={item.icon} className="size-3.5" /></span><div className="min-w-0 flex-1"><p className="truncate text-xs font-semibold">{item.categoryName}</p><p className="text-[10px] text-muted-foreground">{formatMoney(item.spent, currency)} of {formatMoney(Number(item.budget.amount), currency)}</p></div><span className={`text-[11px] font-bold ${item.state === "over" ? "text-expense" : item.state === "warning" ? "text-warning" : "text-income"}`}>{item.percent.toFixed(0)}%</span></div>)}</div> : <p className="text-xs text-muted-foreground">No individual category budgets for this month.</p>}</div>}</div>; }) : <EmptyState text="No monthly budgets have been created yet." />}</div></Section>}
 
-      {tab === "category" && <Section title="Category report" subtitle={`Year ${thisYear}`}>
-        {nodes.length ? <ul className="divide-y divide-border/60">{nodes.map((n) => <li key={n.id} className="py-2.5"><div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3"><span className="grid size-9 shrink-0 place-items-center rounded-xl bg-secondary"><AppIcon name={n.icon} className="size-4" /></span><span className="min-w-0 truncate text-sm font-semibold">{n.name}</span><span className="text-right"><span className="tabular block text-sm font-bold">{formatMoney(n.amount, currency)}</span><span className="block text-[11px] text-muted-foreground">{percent(n.percent)}</span></span></div></li>)}</ul> : <EmptyState text="No spending recorded this year." />}
-      </Section>}
-    </div>
-  );
+    {tab === "category" && <Section title="Category report" subtitle={`Year ${thisYear}`}>{nodes.length ? <ul className="divide-y divide-border/60">{nodes.map((n) => <li key={n.id} className="py-2.5"><div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3"><span className="grid size-9 shrink-0 place-items-center rounded-xl bg-secondary"><AppIcon name={n.icon} className="size-4" /></span><span className="min-w-0 truncate text-sm font-semibold">{n.name}</span><span className="text-right"><span className="tabular block text-sm font-bold">{formatMoney(n.amount, currency)}</span><span className="block text-[11px] text-muted-foreground">{percent(n.percent)}</span></span></div></li>)}</ul> : <EmptyState text="No spending recorded this year." />}</Section>}
+  </div>;
 }

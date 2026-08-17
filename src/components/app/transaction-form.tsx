@@ -82,6 +82,16 @@ export function TransactionForm({
     }
   }, [open, existing, data.accounts, data.categories]);
 
+  useEffect(() => {
+    if (type === "transfer") {
+      setParentId("");
+      setSubId("");
+    } else if (parentId && !parents.some((p) => p.id === parentId)) {
+      setParentId("");
+      setSubId("");
+    }
+  }, [type, parents, parentId]);
+
   const submit = async (): Promise<void> => {
     const value = Number(amount);
     if (!value || value <= 0) {
@@ -240,7 +250,7 @@ export function TransactionForm({
                   </SelectContent>
                 </Select>
               </Field>
-              {type === "expense" && subs.length > 0 && (
+              {subs.length > 0 && (
                 <Field label="Subcategory">
                   <Select value={subId} onValueChange={setSubId}>
                     <SelectTrigger className="h-12 w-full rounded-xl">

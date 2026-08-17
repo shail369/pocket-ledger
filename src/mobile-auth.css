@@ -1,27 +1,22 @@
-* {
-  box-sizing: border-box;
-}
-
-html,
-body,
-#root {
-  margin: 0;
-  width: 100%;
-  min-height: 100%;
-}
-
-body {
-  background: #f8faf9;
-  color: #1f2926;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-}
+/*
+ * Mobile auth styling.
+ * Keep this stylesheet scoped to the auth screen so it cannot override the
+ * main application's global theme, typography, background, or dark mode.
+ */
 
 .mobile-auth-page {
-  min-height: 100vh;
+  min-height: 100dvh;
   width: 100%;
+  box-sizing: border-box;
   padding: 32px 24px;
-  background: #f8faf9;
-  color: #1f2926;
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans);
+}
+
+.mobile-auth-page,
+.mobile-auth-page * {
+  box-sizing: border-box;
 }
 
 .mobile-auth-container {
@@ -42,10 +37,10 @@ body {
   display: grid;
   place-items: center;
   border-radius: 20px;
-  background: #15977f;
-  color: #fff;
+  background: var(--color-primary);
+  color: var(--color-primary-foreground);
   font-size: 20px;
-  font-weight: 700;
+  font-weight: 800;
 }
 
 .mobile-auth-title {
@@ -53,20 +48,23 @@ body {
   font-size: 24px;
   line-height: 1.2;
   font-weight: 800;
+  color: var(--color-foreground);
 }
 
 .mobile-auth-subtitle {
   margin: 8px 0 0;
   font-size: 14px;
   line-height: 1.5;
-  color: #65716d;
+  color: var(--color-muted-foreground);
 }
 
 .mobile-auth-card {
   padding: 20px;
   border-radius: 24px;
-  background: #fff;
-  border: 1px solid #e1e7e4;
+  background: var(--color-card);
+  color: var(--color-card-foreground);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 8px 30px oklch(0 0 0 / 5%);
 }
 
 .mobile-auth-tabs {
@@ -76,7 +74,7 @@ body {
   padding: 4px;
   margin-bottom: 16px;
   border-radius: 16px;
-  background: #eef3f1;
+  background: var(--color-secondary);
 }
 
 .mobile-auth-tab {
@@ -84,13 +82,16 @@ body {
   border: 0;
   border-radius: 12px;
   background: transparent;
-  color: #1f2926;
-  font: 600 14px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: var(--color-secondary-foreground);
+  font: 600 14px/1.2 var(--font-sans);
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .mobile-auth-tab.active {
-  background: #fff;
+  background: var(--color-card);
+  color: var(--color-foreground);
+  box-shadow: 0 1px 3px oklch(0 0 0 / 8%);
 }
 
 .mobile-auth-field {
@@ -104,18 +105,19 @@ body {
   font-size: 12px;
   line-height: 1.2;
   font-weight: 600;
+  color: var(--color-foreground);
 }
 
 .mobile-auth-input {
   display: block;
   width: 100%;
   height: 48px;
-  border: 1px solid #d7dedb;
+  border: 1px solid var(--color-input);
   border-radius: 12px;
-  background: #fff;
-  color: #1f2926;
+  background: var(--color-background);
+  color: var(--color-foreground);
   padding: 0 12px;
-  font: 16px/24px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font: 16px/24px var(--font-sans);
   outline: none;
   -webkit-appearance: none;
   appearance: none;
@@ -124,9 +126,13 @@ body {
   touch-action: manipulation;
 }
 
+.mobile-auth-input::placeholder {
+  color: var(--color-muted-foreground);
+}
+
 .mobile-auth-input:focus {
-  border-color: #15977f;
-  box-shadow: 0 0 0 2px rgba(21, 151, 127, 0.12);
+  border-color: var(--color-ring);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-ring) 15%, transparent);
 }
 
 .mobile-auth-submit {
@@ -134,12 +140,30 @@ body {
   height: 48px;
   border: 0;
   border-radius: 12px;
-  background: #15977f;
-  color: #fff;
-  font: 600 16px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: var(--color-primary);
+  color: var(--color-primary-foreground);
+  font: 700 16px/1.2 var(--font-sans);
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: opacity 150ms ease, transform 150ms ease;
+}
+
+.mobile-auth-submit:active {
+  transform: scale(0.99);
 }
 
 .mobile-auth-submit:disabled {
   opacity: 0.6;
+  cursor: default;
+}
+
+@media (max-width: 480px) {
+  .mobile-auth-page {
+    padding: 24px 16px;
+  }
+
+  .mobile-auth-card {
+    padding: 16px;
+    border-radius: 20px;
+  }
 }

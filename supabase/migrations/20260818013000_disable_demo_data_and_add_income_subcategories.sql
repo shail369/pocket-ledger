@@ -8,7 +8,6 @@ SET search_path = public
 AS $fn$
 DECLARE
   uid uuid := auth.uid();
-  primary_account uuid;
   parent_id uuid;
   sub_name text;
   expense record;
@@ -20,8 +19,7 @@ BEGIN
   IF EXISTS (SELECT 1 FROM accounts WHERE user_id = uid) THEN RETURN; END IF;
 
   INSERT INTO accounts(user_id, name, type, opening_balance, icon, color)
-  VALUES (uid, 'Main Account', 'bank', 0, 'wallet', '#2563eb')
-  RETURNING id INTO primary_account;
+  VALUES (uid, 'Main Account', 'bank', 0, 'wallet', '#2563eb');
 
   FOR expense IN SELECT * FROM (VALUES
     ('Food','utensils', ARRAY['Groceries','Restaurants','Fast Food','Delivery','Cafes']),
@@ -72,6 +70,7 @@ DO $migration$
 DECLARE
   u record;
   parent_id uuid;
+  sub_name text;
   item record;
 BEGIN
   FOR u IN SELECT DISTINCT user_id FROM categories WHERE kind = 'income' LOOP
@@ -109,6 +108,5 @@ BEGIN
 END;
 $migration$;
 
--- These functions only operate on an already-existing demo dataset, so they
--- cannot create demo data for a clean new account. Keep them available for
--- controlled testing of accounts that intentionally contain [Demo] records.
+-- The other demo expansion functions only operate on an already-existing
+-- [Demo] dataset, so they cannot create demo data for a clean new account.

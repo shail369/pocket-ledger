@@ -20,7 +20,7 @@ export const Route = createFileRoute("/_shell/transactions")({
   component: TransactionsPage,
 });
 
-const ALL = "__all__";
+const ALL = "all";
 
 function TransactionsPage() {
   const { data } = useAppData();

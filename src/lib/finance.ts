@@ -12,7 +12,7 @@ import {
   differenceInCalendarDays,
   parseISO,
 } from "date-fns";
-import type { Account, Budget, Category, Transaction } from "./types";
+import type { Account, Budget, Category, SavingsGoal, SavingsGoalContribution, Transaction } from "./types";
 
 export type PeriodKey = "this_week" | "last_7" | "this_month" | "last_month" | "last_30" | "this_year" | "custom";
 export interface Range { from: Date; to: Date; label: string; }
@@ -38,6 +38,34 @@ export const sum = (list: number[]) => list.reduce((a, b) => a + b, 0);
 export function totals(txs: Transaction[]) { const income = sum(txs.filter((t) => t.type === "income").map((t) => Number(t.amount))); const expenses = sum(txs.filter((t) => t.type === "expense").map((t) => Number(t.amount))); const savings = income - expenses; const savingsRate = income > 0 ? (savings / income) * 100 : 0; return { income, expenses, savings, savingsRate }; }
 export function accountBalance(account: Account, txs: Transaction[]) { let balance = Number(account.opening_balance); for (const t of txs) { const amt = Number(t.amount); if (t.type === "income" && t.account_id === account.id) balance += amt; if (t.type === "expense" && t.account_id === account.id) balance -= amt; if (t.type === "transfer") { if (t.account_id === account.id) balance -= amt; if (t.transfer_account_id === account.id) balance += amt; } } return balance; }
 export function totalBalance(accounts: Account[], txs: Transaction[], accountId: string) { const list = accountId === "all" ? accounts.filter((a) => a.is_active) : accounts.filter((a) => a.id === accountId); return sum(list.map((a) => accountBalance(a, txs))); }
+
+export function goalContributions(goalId: string, contributions: SavingsGoalContribution[]) {
+  return contributions.filter((c) => c.goal_id === goalId).sort((a, b) => `${b.date}-${b.created_at}`.localeCompare(`${a.date}-${a.created_at}`));
+}
+
+export function goalContributionTotal(goalId: string, contributions: SavingsGoalContribution[]) {
+  return sum(goalContributions(goalId, contributions).map((c) => Number(c.amount)));
+}
+
+export function accountGoalAllocation(accountId: string, goals: SavingsGoal[], contributions: SavingsGoalContribution[]) {
+  const goalIds = new Set(goals.filter((g) => g.account_id === accountId && g.status !== "archived").map((g) => g.id));
+  return sum(contributions.filter((c) => goalIds.has(c.goal_id)).map((c) => Number(c.amount)));
+}
+
+export function availableAccountBalance(account: Account, txs: Transaction[], goals: SavingsGoal[], contributions: SavingsGoalContribution[]) {
+  return accountBalance(account, txs) - accountGoalAllocation(account.id, goals, contributions);
+}
+
+export function totalAvailableBalance(accounts: Account[], txs: Transaction[], goals: SavingsGoal[], contributions: SavingsGoalContribution[], accountId: string) {
+  const list = accountId === "all" ? accounts.filter((a) => a.is_active) : accounts.filter((a) => a.id === accountId);
+  return sum(list.map((a) => availableAccountBalance(a, txs, goals, contributions)));
+}
+
+export function goalProgress(goal: SavingsGoal, contributions: SavingsGoalContribution[]) {
+  const saved = goalContributionTotal(goal.id, contributions);
+  const target = Number(goal.target_amount);
+  return { saved, target, remaining: Math.max(0, target - saved), percent: target > 0 ? (saved / target) * 100 : 0 };
+}
 
 export interface CategoryNode { id: string; name: string; icon: string; amount: number; percent: number; children: { id: string; name: string; amount: number; percent: number }[]; }
 export function categoryBreakdown(txs: Transaction[], categories: Category[], type: "expense" | "income" = "expense"): CategoryNode[] {

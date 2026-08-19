@@ -4,13 +4,14 @@ import { PeriodSelector } from "@/components/app/selectors";
 import { CategoryBreakdown } from "@/components/app/category-breakdown";
 import { ProjectionChart, SpendingAreaChart } from "@/components/app/charts";
 import { EmptyState, ScreenHeader, Section, StatCard } from "@/components/app/pieces";
+import { Progress } from "@/components/ui/progress";
 import { useAppData } from "@/lib/data";
 import { useAppState } from "@/lib/app-state";
 import { formatMoney, percent } from "@/lib/format";
-import { budgetProgress, categoryBreakdown, dailySeries, periodTransactions, projectMonth, projectionSeries, scopeTransactions, totals } from "@/lib/finance";
+import { budgetProgress, categoryBreakdown, dailySeries, goalProgress, periodTransactions, projectMonth, projectionSeries, scopeTransactions, totals } from "@/lib/finance";
 
 export const Route = createFileRoute("/_shell/insights")({
-  head: () => ({ meta: [{ title: "Insights — Paisa Expense Manager" }, { name: "description", content: "Spending trends, category analysis and end-of-month projections for your money." }] }),
+  head: () => ({ meta: [{ title: "Insights — Paisa Expense Manager" }, { name: "description", content: "Spending trends, category analysis, projections and savings goal progress." }] }),
   component: InsightsPage,
 });
 
@@ -26,6 +27,9 @@ function InsightsPage() {
   const series = projectionSeries(all);
   const savingsRate = t.income > 0 ? (t.savings / t.income) * 100 : 0;
   const avgDaily = projection.dailyRate;
+  const goals = data.savingsGoals.filter((g) => g.status !== "archived" && (accountId === "all" || g.account_id === accountId));
+  const periodGoalContributions = data.savingsGoalContributions.filter((c) => c.date >= range.label ? false : true);
+  const totalGoalContributions = goals.reduce((sum, goal) => sum + goalProgress(goal, data.savingsGoalContributions).saved, 0);
 
   return (
     <div className="space-y-4">
@@ -36,6 +40,9 @@ function InsightsPage() {
       <CategoryBreakdown nodes={nodes} budgets={budgets} />
       <Section title="End-of-month projection" subtitle={`${projection.elapsedDays} of ${projection.totalDays} days elapsed`}><div className="mb-3 grid grid-cols-3 gap-2"><StatCard label="Spent" value={formatMoney(projection.spent, currency, true)} tone="expense" /><StatCard label="Daily rate" value={formatMoney(projection.dailyRate, currency, true)} /><StatCard label="Projected" value={formatMoney(projection.projected, currency, true)} tone="warning" /></div><ProjectionChart data={series} /></Section>
       <Section title="Budget outlook">{budgets.length ? <ul className="space-y-3">{budgets.map((b) => <li key={`${b.budget.id}-${b.categoryName}-${b.rangeLabel}`} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3"><div className="min-w-0"><p className="truncate text-sm font-semibold">{b.categoryName}</p><p className="text-[11px] text-muted-foreground">Projected {formatMoney(b.projected, currency)} of {formatMoney(Number(b.budget.amount), currency)}</p></div><span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${b.projectedState === "over" ? "bg-expense/15 text-expense" : b.projectedState === "warning" ? "bg-warning/15 text-warning" : "bg-income/15 text-income"}`}>{b.projectedState === "over" ? "Will exceed" : b.projectedState === "warning" ? "At risk" : "On track"}</span></li>)}</ul> : <EmptyState text="No budgets set yet." />}</Section>
+      <Section title="Savings Goals" subtitle={`${goals.length} active goals`}>
+        {goals.length ? <div className="space-y-4"><div className="grid grid-cols-2 gap-2"><StatCard label="Allocated" value={formatMoney(totalGoalContributions, currency, true)} tone="primary" /><StatCard label="Goals" value={String(goals.length)} /></div><div className="space-y-3">{goals.map((goal) => { const p = goalProgress(goal, data.savingsGoalContributions); return <div key={goal.id}><div className="flex items-center justify-between gap-3 text-xs"><span className="min-w-0 truncate font-semibold">{goal.icon} {goal.name}</span><span className="tabular text-muted-foreground">{formatMoney(p.saved, currency)} / {formatMoney(p.target, currency)}</span></div><Progress value={Math.min(100, p.percent)} className="mt-1.5 h-1.5" /></div>; })}</div></div> : <EmptyState text="No savings goals yet." />}
+      </Section>
     </div>
   );
 }

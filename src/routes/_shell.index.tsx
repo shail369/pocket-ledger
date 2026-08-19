@@ -6,6 +6,7 @@ import { EmptyState, Section, StatCard } from "@/components/app/pieces";
 import { Progress } from "@/components/ui/progress";
 import { useAppData } from "@/lib/data";
 import { useAppState } from "@/lib/app-state";
+import { formatMoney } from "@/lib/format";
 import { budgetProgress, goalProgress, periodTransactions, totalBalance, totals } from "@/lib/finance";
 
 export const Route = createFileRoute("/_shell/")({

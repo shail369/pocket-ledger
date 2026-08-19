@@ -21,66 +21,23 @@ import { Route as ShellMoreBudgetsRouteImport } from './routes/_shell.more.budge
 import { Route as ShellMoreRecurringRouteImport } from './routes/_shell.more.recurring'
 import { Route as ShellMoreReportsRouteImport } from './routes/_shell.more.reports'
 import { Route as ShellMoreSettingsRouteImport } from './routes/_shell.more.settings'
+import { Route as ShellMoreSavingsGoalsRouteImport } from './routes/_shell.more.savings-goals'
+import { Route as ShellMoreSavingsGoalsGoalIdRouteImport } from './routes/_shell.more.savings-goals.$goalId'
 
-const ShellRoute = ShellRouteImport.update({
-  id: '/_shell',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthRoute = AuthRouteImport.update({
-  id: '/auth',
-  path: '/auth',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ShellIndexRoute = ShellIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => ShellRoute,
-} as any)
-const ShellInsightsRoute = ShellInsightsRouteImport.update({
-  id: '/insights',
-  path: '/insights',
-  getParentRoute: () => ShellRoute,
-} as any)
-const ShellTransactionsRoute = ShellTransactionsRouteImport.update({
-  id: '/transactions',
-  path: '/transactions',
-  getParentRoute: () => ShellRoute,
-} as any)
-const ShellAccountsIndexRoute = ShellAccountsIndexRouteImport.update({
-  id: '/accounts/',
-  path: '/accounts/',
-  getParentRoute: () => ShellRoute,
-} as any)
-const ShellAccountsAccountIdRoute = ShellAccountsAccountIdRouteImport.update({
-  id: '/accounts/$accountId',
-  path: '/accounts/$accountId',
-  getParentRoute: () => ShellRoute,
-} as any)
-const ShellMoreIndexRoute = ShellMoreIndexRouteImport.update({
-  id: '/more/',
-  path: '/more/',
-  getParentRoute: () => ShellRoute,
-} as any)
-const ShellMoreBudgetsRoute = ShellMoreBudgetsRouteImport.update({
-  id: '/more/budgets',
-  path: '/more/budgets',
-  getParentRoute: () => ShellRoute,
-} as any)
-const ShellMoreRecurringRoute = ShellMoreRecurringRouteImport.update({
-  id: '/more/recurring',
-  path: '/more/recurring',
-  getParentRoute: () => ShellRoute,
-} as any)
-const ShellMoreReportsRoute = ShellMoreReportsRouteImport.update({
-  id: '/more/reports',
-  path: '/more/reports',
-  getParentRoute: () => ShellRoute,
-} as any)
-const ShellMoreSettingsRoute = ShellMoreSettingsRouteImport.update({
-  id: '/more/settings',
-  path: '/more/settings',
-  getParentRoute: () => ShellRoute,
-} as any)
+const ShellRoute = ShellRouteImport.update({ id: '/_shell', getParentRoute: () => rootRouteImport } as any)
+const AuthRoute = AuthRouteImport.update({ id: '/auth', path: '/auth', getParentRoute: () => rootRouteImport } as any)
+const ShellIndexRoute = ShellIndexRouteImport.update({ id: '/', path: '/', getParentRoute: () => ShellRoute } as any)
+const ShellInsightsRoute = ShellInsightsRouteImport.update({ id: '/insights', path: '/insights', getParentRoute: () => ShellRoute } as any)
+const ShellTransactionsRoute = ShellTransactionsRouteImport.update({ id: '/transactions', path: '/transactions', getParentRoute: () => ShellRoute } as any)
+const ShellAccountsIndexRoute = ShellAccountsIndexRouteImport.update({ id: '/accounts/', path: '/accounts/', getParentRoute: () => ShellRoute } as any)
+const ShellAccountsAccountIdRoute = ShellAccountsAccountIdRouteImport.update({ id: '/accounts/$accountId', path: '/accounts/$accountId', getParentRoute: () => ShellRoute } as any)
+const ShellMoreIndexRoute = ShellMoreIndexRouteImport.update({ id: '/more/', path: '/more/', getParentRoute: () => ShellRoute } as any)
+const ShellMoreBudgetsRoute = ShellMoreBudgetsRouteImport.update({ id: '/more/budgets', path: '/more/budgets', getParentRoute: () => ShellRoute } as any)
+const ShellMoreRecurringRoute = ShellMoreRecurringRouteImport.update({ id: '/more/recurring', path: '/more/recurring', getParentRoute: () => ShellRoute } as any)
+const ShellMoreReportsRoute = ShellMoreReportsRouteImport.update({ id: '/more/reports', path: '/more/reports', getParentRoute: () => ShellRoute } as any)
+const ShellMoreSettingsRoute = ShellMoreSettingsRouteImport.update({ id: '/more/settings', path: '/more/settings', getParentRoute: () => ShellRoute } as any)
+const ShellMoreSavingsGoalsRoute = ShellMoreSavingsGoalsRouteImport.update({ id: '/more/savings-goals', path: '/more/savings-goals', getParentRoute: () => ShellRoute } as any)
+const ShellMoreSavingsGoalsGoalIdRoute = ShellMoreSavingsGoalsGoalIdRouteImport.update({ id: '/more/savings-goals/$goalId', path: '/more/savings-goals/$goalId', getParentRoute: () => ShellRoute } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof ShellIndexRoute
@@ -92,6 +49,8 @@ export interface FileRoutesByFullPath {
   '/more/recurring': typeof ShellMoreRecurringRoute
   '/more/reports': typeof ShellMoreReportsRoute
   '/more/settings': typeof ShellMoreSettingsRoute
+  '/more/savings-goals': typeof ShellMoreSavingsGoalsRoute
+  '/more/savings-goals/$goalId': typeof ShellMoreSavingsGoalsGoalIdRoute
   '/accounts/': typeof ShellAccountsIndexRoute
   '/more/': typeof ShellMoreIndexRoute
 }
@@ -105,6 +64,8 @@ export interface FileRoutesByTo {
   '/more/recurring': typeof ShellMoreRecurringRoute
   '/more/reports': typeof ShellMoreReportsRoute
   '/more/settings': typeof ShellMoreSettingsRoute
+  '/more/savings-goals': typeof ShellMoreSavingsGoalsRoute
+  '/more/savings-goals/$goalId': typeof ShellMoreSavingsGoalsGoalIdRoute
   '/accounts': typeof ShellAccountsIndexRoute
   '/more': typeof ShellMoreIndexRoute
 }
@@ -120,6 +81,8 @@ export interface FileRoutesById {
   '/_shell/more/recurring': typeof ShellMoreRecurringRoute
   '/_shell/more/reports': typeof ShellMoreReportsRoute
   '/_shell/more/settings': typeof ShellMoreSettingsRoute
+  '/_shell/more/savings-goals': typeof ShellMoreSavingsGoalsRoute
+  '/_shell/more/savings-goals/$goalId': typeof ShellMoreSavingsGoalsGoalIdRoute
   '/_shell/accounts/': typeof ShellAccountsIndexRoute
   '/_shell/more/': typeof ShellMoreIndexRoute
 }
@@ -135,6 +98,8 @@ export interface FileRouteTypes {
     | '/more/recurring'
     | '/more/reports'
     | '/more/settings'
+    | '/more/savings-goals'
+    | '/more/savings-goals/$goalId'
     | '/accounts/'
     | '/more/'
   fileRoutesByTo: FileRoutesByTo
@@ -148,6 +113,8 @@ export interface FileRouteTypes {
     | '/more/recurring'
     | '/more/reports'
     | '/more/settings'
+    | '/more/savings-goals'
+    | '/more/savings-goals/$goalId'
     | '/accounts'
     | '/more'
   id:
@@ -162,101 +129,30 @@ export interface FileRouteTypes {
     | '/_shell/more/recurring'
     | '/_shell/more/reports'
     | '/_shell/more/settings'
+    | '/_shell/more/savings-goals'
+    | '/_shell/more/savings-goals/$goalId'
     | '/_shell/accounts/'
     | '/_shell/more/'
   fileRoutesById: FileRoutesById
 }
-export interface RootRouteChildren {
-  ShellRoute: typeof ShellRouteWithChildren
-  AuthRoute: typeof AuthRoute
-}
+export interface RootRouteChildren { ShellRoute: typeof ShellRouteWithChildren; AuthRoute: typeof AuthRoute }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/_shell': {
-      id: '/_shell'
-      path: ''
-      fullPath: '/'
-      preLoaderRoute: typeof ShellRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth': {
-      id: '/auth'
-      path: '/auth'
-      fullPath: '/auth'
-      preLoaderRoute: typeof AuthRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_shell/': {
-      id: '/_shell/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof ShellIndexRouteImport
-      parentRoute: typeof ShellRoute
-    }
-    '/_shell/insights': {
-      id: '/_shell/insights'
-      path: '/insights'
-      fullPath: '/insights'
-      preLoaderRoute: typeof ShellInsightsRouteImport
-      parentRoute: typeof ShellRoute
-    }
-    '/_shell/transactions': {
-      id: '/_shell/transactions'
-      path: '/transactions'
-      fullPath: '/transactions'
-      preLoaderRoute: typeof ShellTransactionsRouteImport
-      parentRoute: typeof ShellRoute
-    }
-    '/_shell/accounts/': {
-      id: '/_shell/accounts/'
-      path: '/accounts'
-      fullPath: '/accounts/'
-      preLoaderRoute: typeof ShellAccountsIndexRouteImport
-      parentRoute: typeof ShellRoute
-    }
-    '/_shell/accounts/$accountId': {
-      id: '/_shell/accounts/$accountId'
-      path: '/accounts/$accountId'
-      fullPath: '/accounts/$accountId'
-      preLoaderRoute: typeof ShellAccountsAccountIdRouteImport
-      parentRoute: typeof ShellRoute
-    }
-    '/_shell/more/': {
-      id: '/_shell/more/'
-      path: '/more'
-      fullPath: '/more/'
-      preLoaderRoute: typeof ShellMoreIndexRouteImport
-      parentRoute: typeof ShellRoute
-    }
-    '/_shell/more/budgets': {
-      id: '/_shell/more/budgets'
-      path: '/more/budgets'
-      fullPath: '/more/budgets'
-      preLoaderRoute: typeof ShellMoreBudgetsRouteImport
-      parentRoute: typeof ShellRoute
-    }
-    '/_shell/more/recurring': {
-      id: '/_shell/more/recurring'
-      path: '/more/recurring'
-      fullPath: '/more/recurring'
-      preLoaderRoute: typeof ShellMoreRecurringRouteImport
-      parentRoute: typeof ShellRoute
-    }
-    '/_shell/more/reports': {
-      id: '/_shell/more/reports'
-      path: '/more/reports'
-      fullPath: '/more/reports'
-      preLoaderRoute: typeof ShellMoreReportsRouteImport
-      parentRoute: typeof ShellRoute
-    }
-    '/_shell/more/settings': {
-      id: '/_shell/more/settings'
-      path: '/more/settings'
-      fullPath: '/more/settings'
-      preLoaderRoute: typeof ShellMoreSettingsRouteImport
-      parentRoute: typeof ShellRoute
-    }
+    '/_shell': { id: '/_shell'; path: ''; fullPath: '/'; preLoaderRoute: typeof ShellRouteImport; parentRoute: typeof rootRouteImport }
+    '/auth': { id: '/auth'; path: '/auth'; fullPath: '/auth'; preLoaderRoute: typeof AuthRouteImport; parentRoute: typeof rootRouteImport }
+    '/_shell/': { id: '/_shell/'; path: '/'; fullPath: '/'; preLoaderRoute: typeof ShellIndexRouteImport; parentRoute: typeof ShellRoute }
+    '/_shell/insights': { id: '/_shell/insights'; path: '/insights'; fullPath: '/insights'; preLoaderRoute: typeof ShellInsightsRouteImport; parentRoute: typeof ShellRoute }
+    '/_shell/transactions': { id: '/_shell/transactions'; path: '/transactions'; fullPath: '/transactions'; preLoaderRoute: typeof ShellTransactionsRouteImport; parentRoute: typeof ShellRoute }
+    '/_shell/accounts/': { id: '/_shell/accounts/'; path: '/accounts'; fullPath: '/accounts/'; preLoaderRoute: typeof ShellAccountsIndexRouteImport; parentRoute: typeof ShellRoute }
+    '/_shell/accounts/$accountId': { id: '/_shell/accounts/$accountId'; path: '/accounts/$accountId'; fullPath: '/accounts/$accountId'; preLoaderRoute: typeof ShellAccountsAccountIdRouteImport; parentRoute: typeof ShellRoute }
+    '/_shell/more/': { id: '/_shell/more/'; path: '/more'; fullPath: '/more/'; preLoaderRoute: typeof ShellMoreIndexRouteImport; parentRoute: typeof ShellRoute }
+    '/_shell/more/budgets': { id: '/_shell/more/budgets'; path: '/more/budgets'; fullPath: '/more/budgets'; preLoaderRoute: typeof ShellMoreBudgetsRouteImport; parentRoute: typeof ShellRoute }
+    '/_shell/more/recurring': { id: '/_shell/more/recurring'; path: '/more/recurring'; fullPath: '/more/recurring'; preLoaderRoute: typeof ShellMoreRecurringRouteImport; parentRoute: typeof ShellRoute }
+    '/_shell/more/reports': { id: '/_shell/more/reports'; path: '/more/reports'; fullPath: '/more/reports'; preLoaderRoute: typeof ShellMoreReportsRouteImport; parentRoute: typeof ShellRoute }
+    '/_shell/more/settings': { id: '/_shell/more/settings'; path: '/more/settings'; fullPath: '/more/settings'; preLoaderRoute: typeof ShellMoreSettingsRouteImport; parentRoute: typeof ShellRoute }
+    '/_shell/more/savings-goals': { id: '/_shell/more/savings-goals'; path: '/more/savings-goals'; fullPath: '/more/savings-goals'; preLoaderRoute: typeof ShellMoreSavingsGoalsRouteImport; parentRoute: typeof ShellRoute }
+    '/_shell/more/savings-goals/$goalId': { id: '/_shell/more/savings-goals/$goalId'; path: '/more/savings-goals/$goalId'; fullPath: '/more/savings-goals/$goalId'; preLoaderRoute: typeof ShellMoreSavingsGoalsGoalIdRouteImport; parentRoute: typeof ShellRoute }
   }
 }
 
@@ -269,6 +165,8 @@ interface ShellRouteChildren {
   ShellMoreRecurringRoute: typeof ShellMoreRecurringRoute
   ShellMoreReportsRoute: typeof ShellMoreReportsRoute
   ShellMoreSettingsRoute: typeof ShellMoreSettingsRoute
+  ShellMoreSavingsGoalsRoute: typeof ShellMoreSavingsGoalsRoute
+  ShellMoreSavingsGoalsGoalIdRoute: typeof ShellMoreSavingsGoalsGoalIdRoute
   ShellAccountsIndexRoute: typeof ShellAccountsIndexRoute
   ShellMoreIndexRoute: typeof ShellMoreIndexRoute
 }
@@ -282,19 +180,15 @@ const ShellRouteChildren: ShellRouteChildren = {
   ShellMoreRecurringRoute: ShellMoreRecurringRoute,
   ShellMoreReportsRoute: ShellMoreReportsRoute,
   ShellMoreSettingsRoute: ShellMoreSettingsRoute,
+  ShellMoreSavingsGoalsRoute: ShellMoreSavingsGoalsRoute,
+  ShellMoreSavingsGoalsGoalIdRoute: ShellMoreSavingsGoalsGoalIdRoute,
   ShellAccountsIndexRoute: ShellAccountsIndexRoute,
   ShellMoreIndexRoute: ShellMoreIndexRoute,
 }
 
 const ShellRouteWithChildren = ShellRoute._addFileChildren(ShellRouteChildren)
-
-const rootRouteChildren: RootRouteChildren = {
-  ShellRoute: ShellRouteWithChildren,
-  AuthRoute: AuthRoute,
-}
-export const routeTree = rootRouteImport
-  ._addFileChildren(rootRouteChildren)
-  ._addFileTypes<FileRouteTypes>()
+const rootRouteChildren: RootRouteChildren = { ShellRoute: ShellRouteWithChildren, AuthRoute: AuthRoute }
+export const routeTree = rootRouteImport._addFileChildren(rootRouteChildren)._addFileTypes<FileRouteTypes>()
 
 import type { getRouter } from './router.tsx'
 import type { startInstance } from './start.ts'

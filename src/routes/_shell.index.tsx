@@ -6,11 +6,10 @@ import { EmptyState, Section, StatCard } from "@/components/app/pieces";
 import { Progress } from "@/components/ui/progress";
 import { useAppData } from "@/lib/data";
 import { useAppState } from "@/lib/app-state";
-import { formatMoney } from "@/lib/format";
-import { budgetProgress, periodTransactions, totalBalance, totals } from "@/lib/finance";
+import { budgetProgress, goalProgress, periodTransactions, totalBalance, totals } from "@/lib/finance";
 
 export const Route = createFileRoute("/_shell/")({
-  head: () => ({ meta: [{ title: "Dashboard — Paisa Expense Manager" }, { name: "description", content: "A compact mobile overview of your balance, spending and budgets." }] }),
+  head: () => ({ meta: [{ title: "Dashboard — Paisa Expense Manager" }, { name: "description", content: "A compact mobile overview of your balance, spending, budgets and savings goals." }] }),
   component: Dashboard,
 });
 
@@ -21,6 +20,7 @@ function Dashboard() {
   const t = totals(scoped);
   const balance = totalBalance(data.accounts, data.transactions, accountId);
   const budgets = budgetProgress(data.budgets, data.transactions, data.categories, accountId);
+  const savingsGoals = data.savingsGoals.filter((g) => g.status !== "archived" && (accountId === "all" || g.account_id === accountId)).slice(0, 3);
   const upcoming = data.recurring.filter((r) => r.is_active && (accountId === "all" || r.account_id === accountId)).slice(0, 3);
 
   return (
@@ -31,6 +31,10 @@ function Dashboard() {
 
       <Section title="Budgets" action={<Link to="/more/budgets" className="text-xs font-semibold text-primary">Manage</Link>}>
         {budgets.length ? <div className="space-y-2.5">{budgets.filter((b) => b.budget.category_id).slice(0, 3).map((b) => <div key={`${b.budget.id}-${b.categoryName}`}><div className="flex items-center justify-between text-xs"><span className="truncate font-medium">{b.categoryName}</span><span className="tabular text-muted-foreground">{formatMoney(b.spent, currency)} / {formatMoney(Number(b.budget.amount), currency)}</span></div><Progress value={Math.min(100, b.percent)} className={`mt-1 h-1.5 ${b.state === "over" ? "[&>div]:bg-expense" : b.state === "warning" ? "[&>div]:bg-warning" : ""}`} /></div>)}</div> : <EmptyState text="No budgets set for this account yet." />}
+      </Section>
+
+      <Section title="Savings Goals" action={<Link to="/more/savings-goals" className="text-xs font-semibold text-primary">View all</Link>}>
+        {savingsGoals.length ? <div className="space-y-3">{savingsGoals.map((goal) => { const p = goalProgress(goal, data.savingsGoalContributions); return <Link key={goal.id} to="/more/savings-goals/$goalId" params={{ goalId: goal.id }} className="block"><div className="flex items-center justify-between gap-3 text-xs"><span className="min-w-0 truncate font-medium">{goal.icon} {goal.name}</span><span className="tabular text-muted-foreground">{formatMoney(p.saved, currency)} / {formatMoney(p.target, currency)}</span></div><Progress value={Math.min(100, p.percent)} className="mt-1 h-1.5" /></Link>; })}</div> : <EmptyState text="No savings goals yet." />}
       </Section>
 
       <Section title="Upcoming" action={<Link to="/more/recurring" className="text-xs font-semibold text-primary">View all</Link>}>

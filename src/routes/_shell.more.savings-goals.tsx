@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ChevronLeft, ChevronRight, Plus, Trash2, Pencil, Target } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Trash2, Pencil } from "lucide-react";
 import { format, differenceInCalendarMonths, parseISO } from "date-fns";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -12,7 +12,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAppData, useRemove, useUpsert } from "@/lib/data";
 import { useAppState } from "@/lib/app-state";
-import { accountGoalAllocation, accountBalance, availableAccountBalance, goalProgress } from "@/lib/finance";
+import { accountGoalAllocation, availableAccountBalance, goalProgress } from "@/lib/finance";
 import { formatMoney } from "@/lib/format";
 import type { SavingsGoal, SavingsGoalType, SavingsGoalPriority } from "@/lib/types";
 

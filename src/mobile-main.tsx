@@ -5,7 +5,7 @@ import { ThemeProvider } from "@/lib/theme";
 import { AuthProvider, useAuth } from "@/lib/auth";
 import { AppStateProvider } from "@/lib/app-state";
 import { MobileAuthReact } from "./mobile-auth-react";
-import { MobileRouterProvider } from "./mobile-router-shim";
+import { RouterProvider } from "./router";
 import { Route as ShellRoute } from "./routes/_shell";
 
 const queryClient = new QueryClient({
@@ -41,9 +41,9 @@ async function start() {
       <ThemeProvider>
         <AuthProvider>
           <AppStateProvider>
-            <MobileRouterProvider>
+            <RouterProvider>
               <MobileApp />
-            </MobileRouterProvider>
+            </RouterProvider>
           </AppStateProvider>
         </AuthProvider>
       </ThemeProvider>

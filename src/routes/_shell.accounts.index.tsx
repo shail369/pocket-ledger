@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@/router";
 import { useState } from "react";
 import { Plus, ChevronRight } from "lucide-react";
 import { AppIcon } from "@/components/app/icon";
@@ -55,42 +55,28 @@ function AccountsPage() {
                 params={{ accountId: a.id }}
                 className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 py-3"
               >
-                <span
-                  className="grid size-10 shrink-0 place-items-center rounded-2xl text-white"
-                  style={{ backgroundColor: a.color }}
-                >
+                <span className="grid size-10 shrink-0 place-items-center rounded-2xl text-white" style={{ backgroundColor: a.color }}>
                   <AppIcon name={a.icon} className="size-4" />
                 </span>
                 <span className="min-w-0">
                   <span className="block truncate text-sm font-semibold">{a.name}</span>
-                  <span className="block text-[11px] capitalize text-muted-foreground">
-                    {a.type} · {a.currency}
-                  </span>
+                  <span className="block text-[11px] capitalize text-muted-foreground">{a.type} · {a.currency}</span>
                 </span>
                 <span className="flex items-center gap-1">
-                  <span className="tabular text-sm font-bold">
-                    {formatMoney(accountBalance(a, data.transactions), a.currency)}
-                  </span>
+                  <span className="tabular text-sm font-bold">{formatMoney(accountBalance(a, data.transactions), a.currency)}</span>
                   <ChevronRight className="size-4 text-muted-foreground" />
                 </span>
               </Link>
             ))}
           </div>
-        ) : (
-          <EmptyState text="No accounts yet." />
-        )}
+        ) : <EmptyState text="No accounts yet." />}
       </Section>
 
       {archived.length > 0 && (
         <Section title="Archived">
           <div className="divide-y divide-border/60">
             {archived.map((a) => (
-              <Link
-                key={a.id}
-                to="/accounts/$accountId"
-                params={{ accountId: a.id }}
-                className="flex items-center justify-between py-3 opacity-60"
-              >
+              <Link key={a.id} to="/accounts/$accountId" params={{ accountId: a.id }} className="flex items-center justify-between py-3 opacity-60">
                 <span className="truncate text-sm font-semibold">{a.name}</span>
                 <span className="tabular text-sm">{formatMoney(accountBalance(a, data.transactions), a.currency)}</span>
               </Link>

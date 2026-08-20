@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute } from "@/router";
 import { useMemo } from "react";
 import { PeriodSelector } from "@/components/app/selectors";
 import { CategoryBreakdown } from "@/components/app/category-breakdown";
@@ -26,7 +26,6 @@ function InsightsPage() {
   const series = projectionSeries(all);
   const savingsRate = t.income > 0 ? (t.savings / t.income) * 100 : 0;
   const avgDaily = projection.dailyRate;
-
   return (
     <div className="space-y-4">
       <ScreenHeader title="Insights" />

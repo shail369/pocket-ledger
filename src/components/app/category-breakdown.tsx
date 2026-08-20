@@ -24,7 +24,7 @@ export function CategoryBreakdown({ nodes, budgets = [], title = "Spending by ca
       action={active ? <button onClick={() => setSelected(null)} className="flex items-center gap-0.5 text-xs font-semibold text-primary"><ChevronLeft className="size-3.5" /> All categories</button> : <span className="tabular text-xs font-semibold text-muted-foreground">{formatMoney(total, currency)}</span>}
     >
       <div className="flex items-center gap-4">
-        <div className="relative size-28 shrink-0">
+        <div className="relative size-28 shrink-0 [&_.recharts-sector:focus]:outline-none">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie data={pieData} dataKey="value" innerRadius={36} outerRadius={54} paddingAngle={2} stroke="none" isAnimationActive={false}>

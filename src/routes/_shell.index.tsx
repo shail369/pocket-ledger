@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@/router";
 import { format, parseISO } from "date-fns";
 import { CalendarClock } from "lucide-react";
 import { PeriodSelector } from "@/components/app/selectors";

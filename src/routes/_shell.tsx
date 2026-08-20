@@ -1,11 +1,12 @@
-import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { Link, Outlet, useRouterState } from "@tanstack/react-router";
+import { useState } from "react";
 import { LayoutGrid, PieChart, Menu, Plus, PiggyBank, FileBarChart } from "lucide-react";
-import { useAuth } from "@/lib/auth";
 import { TransactionForm } from "@/components/app/transaction-form";
 import { AccountSelector } from "@/components/app/selectors";
 
-export const Route = createFileRoute("/_shell")({ component: ShellLayout });
+export const Route = {
+  component: ShellLayout,
+};
 
 const NAV = [
   { to: "/", label: "Home", icon: LayoutGrid },
@@ -16,16 +17,8 @@ const NAV = [
 ] as const;
 
 function ShellLayout() {
-  const { session, loading } = useAuth();
-  const navigate = useNavigate();
   const [addOpen, setAddOpen] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-
-  useEffect(() => {
-    if (!loading && !session) void navigate({ to: "/auth" });
-  }, [loading, session, navigate]);
-
-  if (loading || !session) return <div className="grid min-h-dvh place-items-center bg-background"><div className="size-8 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>;
 
   return (
     <div className="min-h-dvh bg-background">

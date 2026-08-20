@@ -19,7 +19,7 @@ const queryClient = new QueryClient({
   },
 });
 
-function MobileApp() {
+function App() {
   const { session, loading } = useAuth();
 
   if (loading) {
@@ -34,7 +34,7 @@ function MobileApp() {
 
 async function start() {
   const rootElement = document.getElementById("root");
-  if (!rootElement) throw new Error("Pocket Ledger mobile root element was not found.");
+  if (!rootElement) throw new Error("Pocket Ledger app root element was not found.");
 
   createRoot(rootElement).render(
     <QueryClientProvider client={queryClient}>
@@ -42,7 +42,7 @@ async function start() {
         <AuthProvider>
           <AppStateProvider>
             <RouterProvider>
-              <MobileApp />
+              <App />
             </RouterProvider>
           </AppStateProvider>
         </AuthProvider>
@@ -53,10 +53,10 @@ async function start() {
   try {
     const { Capacitor } = await import("@capacitor/core");
     if (!Capacitor.isNativePlatform()) return;
-    const { App } = await import("@capacitor/app");
-    await App.addListener("backButton", ({ canGoBack }) => {
+    const { App: CapacitorApp } = await import("@capacitor/app");
+    await CapacitorApp.addListener("backButton", ({ canGoBack }) => {
       if (canGoBack && window.history.length > 1) window.history.back();
-      else void App.exitApp();
+      else void CapacitorApp.exitApp();
     });
   } catch {
     // Web preview or plugin unavailable.

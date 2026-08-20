@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "@/lib/theme";
 import { AuthProvider, useAuth } from "@/lib/auth";
 import { AppStateProvider } from "@/lib/app-state";
-import { MobileAuthReact } from "./mobile-auth-react";
+import { AuthScreen } from "@/components/app/auth-screen";
 import { RouterProvider } from "./router";
 import { Route as ShellRoute } from "./routes/_shell";
 
@@ -26,7 +26,7 @@ function MobileApp() {
     return <div className="grid min-h-dvh place-items-center bg-background"><div className="size-8 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>;
   }
 
-  if (!session) return <MobileAuthReact />;
+  if (!session) return <AuthScreen />;
 
   const Shell = ShellRoute.component;
   return <Shell />;

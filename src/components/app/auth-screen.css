@@ -1,0 +1,37 @@
+/* Auth screen styles are scoped so they cannot affect the main application. */
+
+.auth-screen {
+  min-height: 100dvh;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 32px 24px;
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans);
+}
+
+.auth-screen,
+.auth-screen * { box-sizing: border-box; }
+
+.auth-screen-container { width: 100%; max-width: 448px; margin: 0 auto; }
+.auth-screen-header { margin-bottom: 24px; text-align: center; }
+.auth-screen-logo { width: 56px; height: 56px; margin: 0 auto 8px; display: grid; place-items: center; border-radius: 20px; background: var(--color-primary); color: var(--color-primary-foreground); font-size: 20px; font-weight: 800; }
+.auth-screen-title { margin: 0; font-size: 24px; line-height: 1.2; font-weight: 800; color: var(--color-foreground); }
+.auth-screen-subtitle { margin: 8px 0 0; font-size: 14px; line-height: 1.5; color: var(--color-muted-foreground); }
+.auth-screen-card { padding: 20px; border-radius: 24px; background: var(--color-card); color: var(--color-card-foreground); border: 1px solid var(--color-border); box-shadow: 0 8px 30px oklch(0 0 0 / 5%); }
+.auth-screen-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; margin-bottom: 16px; border-radius: 16px; background: var(--color-secondary); }
+.auth-screen-tab { height: 40px; border: 0; border-radius: 12px; background: transparent; color: var(--color-secondary-foreground); font: 600 14px/1.2 var(--font-sans); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.auth-screen-tab.active { background: var(--color-card); color: var(--color-foreground); box-shadow: 0 1px 3px oklch(0 0 0 / 8%); }
+.auth-screen-field { display: block; margin-bottom: 16px; }
+.auth-screen-label { display: block; margin-bottom: 6px; font-size: 12px; line-height: 1.2; font-weight: 600; color: var(--color-foreground); }
+.auth-screen-input { display: block; width: 100%; height: 48px; border: 1px solid var(--color-input); border-radius: 12px; background: var(--color-background); color: var(--color-foreground); padding: 0 12px; font: 16px/24px var(--font-sans); outline: none; -webkit-appearance: none; appearance: none; -webkit-user-select: text; user-select: text; touch-action: manipulation; }
+.auth-screen-input::placeholder { color: var(--color-muted-foreground); }
+.auth-screen-input:focus { border-color: var(--color-ring); box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-ring) 15%, transparent); }
+.auth-screen-submit { width: 100%; height: 48px; border: 0; border-radius: 12px; background: var(--color-primary); color: var(--color-primary-foreground); font: 700 16px/1.2 var(--font-sans); cursor: pointer; -webkit-tap-highlight-color: transparent; transition: opacity 150ms ease, transform 150ms ease; }
+.auth-screen-submit:active { transform: scale(0.99); }
+.auth-screen-submit:disabled { opacity: 0.6; cursor: default; }
+
+@media (max-width: 480px) {
+  .auth-screen { padding: 24px 16px; }
+  .auth-screen-card { padding: 16px; border-radius: 20px; }
+}

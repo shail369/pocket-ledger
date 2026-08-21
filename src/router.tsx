@@ -14,7 +14,7 @@ const Dashboard = lazy(() => import("./routes/_shell.index").then((m) => ({ defa
 const Insights = lazy(() => import("./routes/_shell.insights").then((m) => ({ default: m.Route.component })));
 const Transactions = lazy(() => import("./routes/_shell.transactions").then((m) => ({ default: m.Route.component })));
 const Accounts = lazy(() => import("./routes/_shell.accounts.index.v2").then((m) => ({ default: m.Route.component })));
-const AccountDetail = lazy(() => import("./routes/_shell.accounts.$accountId").then((m) => ({ default: m.Route.component })));
+const AccountDetail = lazy(() => import("./routes/_shell.accounts.$accountId.reserved").then((m) => ({ default: m.Route.component })));
 const More = lazy(() => import("./routes/_shell.more.index").then((m) => ({ default: m.Route.component })));
 const Budgets = lazy(() => import("./routes/_shell.more.budgets").then((m) => ({ default: m.Route.component })));
 const Categories = lazy(() => import("./routes/_shell.more.categories").then((m) => ({ default: m.Route.component })));

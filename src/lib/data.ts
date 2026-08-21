@@ -21,25 +21,36 @@ async function fetchAllTransactions(): Promise<Transaction[]> {
 }
 
 async function fetchAppData(): Promise<AppData> {
-  const [accounts, categories, transactions, budgets, recurring, savingGoals, savingGoalContributions] = await Promise.all([
+  // Core application data must never be blocked by the optional Saving Goals
+  // tables. This keeps existing accounts, transactions, budgets and recurring
+  // data visible even if the Saving Goals migration has not reached the backend yet.
+  const [accounts, categories, transactions, budgets, recurring] = await Promise.all([
     supabase.from("accounts").select("*").order("created_at"),
     supabase.from("categories").select("*").order("name"),
     fetchAllTransactions(),
     supabase.from("budgets").select("*").order("created_at"),
     supabase.from("recurring_transactions").select("*").order("next_occurrence"),
+  ]);
+
+  const coreError = accounts.error || categories.error || budgets.error || recurring.error;
+  if (coreError) throw coreError;
+
+  // Saving Goals are an additive feature. If either new table is unavailable
+  // (for example before Supabase migrations have been applied), fall back to
+  // empty goal data rather than failing the entire wallet-data query.
+  const [savingGoals, savingGoalContributions] = await Promise.all([
     supabase.from("saving_goals").select("*").order("created_at"),
     supabase.from("saving_goal_contributions").select("*").order("date", { ascending: false }).order("created_at", { ascending: false }),
   ]);
-  const err = accounts.error || categories.error || budgets.error || recurring.error || savingGoals.error || savingGoalContributions.error;
-  if (err) throw err;
+
   return {
     accounts: (accounts.data ?? []) as unknown as Account[],
     categories: (categories.data ?? []) as unknown as Category[],
     transactions,
     budgets: (budgets.data ?? []) as unknown as Budget[],
     recurring: (recurring.data ?? []) as unknown as Recurring[],
-    savingGoals: (savingGoals.data ?? []) as unknown as SavingGoal[],
-    savingGoalContributions: (savingGoalContributions.data ?? []) as unknown as SavingGoalContribution[],
+    savingGoals: savingGoals.error ? [] : ((savingGoals.data ?? []) as unknown as SavingGoal[]),
+    savingGoalContributions: savingGoalContributions.error ? [] : ((savingGoalContributions.data ?? []) as unknown as SavingGoalContribution[]),
   };
 }
 

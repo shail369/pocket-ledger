@@ -72,7 +72,6 @@ export interface SavingGoalContribution {
   id: string;
   goal_id: string;
   account_id: string;
-  transaction_id: string | null;
   amount: number;
   date: string;
   note: string;

@@ -30,7 +30,7 @@ jobs:
         with:
           version: latest
 
-      - name: Preview pending migrations
+      - name: Validate database connection
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: |
@@ -38,7 +38,34 @@ jobs:
             echo "::error::SUPABASE_DB_URL GitHub secret is required."
             exit 1
           fi
-          supabase db push --db-url "$SUPABASE_DB_URL" --dry-run
+
+      - name: Repair replaced legacy migration history
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          # The repository was intentionally consolidated into one current
+          # baseline. These old versions are history-only records from the
+          # previous migration chain. Repair removes only those history rows;
+          # it does not execute or revert their SQL.
+          for version in \
+            20260812120805 \
+            20260812120823 \
+            20260812193000 \
+            20260812211500 \
+            20260818013000 \
+            20260821180000 \
+            20260821190000 \
+            20260821200000
+          do
+            supabase migration repair "$version" \
+              --status reverted \
+              --db-url "$SUPABASE_DB_URL" || true
+          done
+
+      - name: Preview pending migrations
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: supabase db push --db-url "$SUPABASE_DB_URL" --dry-run
 
       - name: Apply database migrations
         env:

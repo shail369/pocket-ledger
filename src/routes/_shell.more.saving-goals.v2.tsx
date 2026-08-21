@@ -1,0 +1,80 @@
+import { createFileRoute } from "@/router";
+import { useMemo, useState } from "react";
+import { ChevronLeft, CircleDollarSign, Pencil, Plus, Trash2 } from "lucide-react";
+import { differenceInCalendarMonths, format, parseISO, startOfMonth } from "date-fns";
+import { toast } from "sonner";
+import { EmptyState, Section } from "@/components/app/pieces";
+import { AppIcon, ICON_OPTIONS } from "@/components/app/icon";
+import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useAppData, useRemove, useUpsert } from "@/lib/data";
+import { useAppState } from "@/lib/app-state";
+import { accountBalance } from "@/lib/finance";
+import { formatMoney } from "@/lib/format";
+import { reservedByGoal } from "@/lib/saving-goal-reservations";
+import type { SavingGoal } from "@/lib/types";
+
+export const Route = createFileRoute("/_shell/more/saving-goals")({ component: SavingGoalsPage });
+const COLORS = ["#2563eb", "#16a34a", "#a855f7", "#f97316", "#e11d48", "#0891b2"];
+
+function SavingGoalsPage() {
+  const { data } = useAppData();
+  const { currency } = useAppState();
+  const [formOpen, setFormOpen] = useState(false);
+  const [contributionOpen, setContributionOpen] = useState(false);
+  const [editing, setEditing] = useState<SavingGoal | null>(null);
+  const [selected, setSelected] = useState<SavingGoal | null>(null);
+  const contributions = data.savingGoalContributions;
+  const saved = useMemo(() => new Map(data.savingGoals.map((g) => [g.id, reservedByGoal(g.id, contributions)])), [data.savingGoals, contributions]);
+  const totalTarget = data.savingGoals.reduce((n, g) => n + Number(g.target_amount), 0);
+  const totalSaved = [...saved.values()].reduce((n, v) => n + v, 0);
+
+  const removeGoal = async (goal: SavingGoal) => {
+    if (!confirm(`Delete “${goal.name}” and release its reserved money?`)) return;
+    try { await useRemove("saving_goals").mutateAsync(goal.id); setSelected(null); toast.success("Saving goal deleted"); } catch (e) { toast.error((e as Error).message); }
+  };
+
+  return <div className="space-y-4">
+    <header className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2"><button onClick={() => history.back()} className="grid size-9 place-items-center rounded-full bg-secondary"><ChevronLeft className="size-5" /></button><h1 className="truncate text-lg font-extrabold">Saving Goals</h1><button onClick={() => { setEditing(null); setFormOpen(true); }} className="grid size-10 place-items-center rounded-full bg-primary text-primary-foreground"><Plus className="size-5" /></button></header>
+    {data.savingGoals.length > 0 && <Section><div className="grid grid-cols-3 gap-3 text-center"><Summary value={formatMoney(totalTarget, currency)} label="Total target" /><Summary value={formatMoney(totalSaved, currency)} label="Reserved" /><Summary value={formatMoney(Math.max(0, totalTarget - totalSaved), currency)} label="Remaining" /></div></Section>}
+    {data.savingGoals.length ? data.savingGoals.map((goal) => <GoalCard key={goal.id} goal={goal} saved={saved.get(goal.id) ?? 0} currency={currency} onOpen={() => setSelected(goal)} onEdit={() => { setEditing(goal); setFormOpen(true); }} onDelete={() => void removeGoal(goal)} />) : <Section><EmptyState text="No saving goals yet. Tap + to create your first goal." /></Section>}
+    <GoalForm open={formOpen} onOpenChange={setFormOpen} existing={editing} />
+    {selected && <GoalDetails goal={selected} currency={currency} onClose={() => setSelected(null)} onAdd={() => setContributionOpen(true)} onEdit={() => { setEditing(selected); setFormOpen(true); }} />}
+    {selected && <ContributionForm goal={selected} open={contributionOpen} onOpenChange={setContributionOpen} />}
+  </div>;
+}
+
+function Summary({ value, label }: { value: string; label: string }) { return <div><p className="truncate text-sm font-extrabold tabular">{value}</p><p className="text-[10px] text-muted-foreground">{label}</p></div>; }
+
+function GoalCard({ goal, saved, currency, onOpen, onEdit, onDelete }: { goal: SavingGoal; saved: number; currency: string; onOpen: () => void; onEdit: () => void; onDelete: () => void }) {
+  const target = Number(goal.target_amount); const percent = target > 0 ? Math.min(100, saved / target * 100) : 0; const complete = saved >= target;
+  return <Section><div className="grid grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-2"><span className="grid size-10 shrink-0 place-items-center rounded-2xl" style={{ backgroundColor: `${goal.color}18`, color: goal.color }}><AppIcon name={goal.icon} className="size-5" /></span><button onClick={onOpen} className="min-w-0 text-left"><p className="truncate text-sm font-bold">{goal.name}</p><p className="text-[11px] text-muted-foreground">{complete ? "Goal completed" : goal.target_date ? `Target ${format(parseISO(goal.target_date), "d MMM yyyy")}` : "No target date"}</p></button><button onClick={onEdit} className="grid size-9 place-items-center rounded-xl bg-secondary"><Pencil className="size-4" /></button><button onClick={onDelete} className="grid size-9 place-items-center rounded-xl bg-secondary text-expense"><Trash2 className="size-4" /></button></div><button onClick={onOpen} className="mt-3 w-full text-left"><Progress value={percent} className="h-2" /><div className="mt-1.5 flex justify-between text-[11px] text-muted-foreground"><span>{formatMoney(saved, currency)} of {formatMoney(target, currency)}</span><span>{Math.round(percent)}%</span></div><p className="mt-1 text-[11px] text-muted-foreground">{complete ? "🎉 Target reached" : `${formatMoney(Math.max(0, target - saved), currency)} remaining`}</p></button></Section>;
+}
+
+function GoalForm({ open, onOpenChange, existing }: { open: boolean; onOpenChange: (v: boolean) => void; existing: SavingGoal | null }) {
+  const upsert = useUpsert("saving_goals"); const [name, setName] = useState(""); const [target, setTarget] = useState(""); const [date, setDate] = useState(""); const [icon, setIcon] = useState("piggy-bank"); const [color, setColor] = useState(COLORS[0]); const [description, setDescription] = useState("");
+  const reset = () => { setName(existing?.name ?? ""); setTarget(existing ? String(existing.target_amount) : ""); setDate(existing?.target_date ?? ""); setIcon(existing?.icon ?? "piggy-bank"); setColor(existing?.color ?? COLORS[0]); setDescription(existing?.description ?? ""); };
+  const submit = async () => { const amount = Number(target); if (!name.trim() || !Number.isFinite(amount) || amount <= 0) { toast.error("Enter a name and target amount greater than zero"); return; } try { await upsert.mutateAsync({ ...(existing ? { id: existing.id } : {}), name: name.trim(), target_amount: amount.toFixed(2), target_date: date || null, icon, color, description: description.trim() }); onOpenChange(false); toast.success(existing ? "Goal updated" : "Goal created"); } catch (e) { toast.error((e as Error).message); } };
+  return <Sheet open={open} onOpenChange={(v) => { if (v) reset(); onOpenChange(v); }}><SheetContent side="bottom" className="max-h-[90vh] overflow-y-auto rounded-t-3xl"><SheetHeader><SheetTitle>{existing ? "Edit saving goal" : "New saving goal"}</SheetTitle></SheetHeader><div className="space-y-4 px-4 pb-8"><Field label="Goal name"><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="New laptop" className="h-12 rounded-xl" /></Field><div className="grid grid-cols-2 gap-3"><Field label="Target amount"><Input inputMode="decimal" value={target} onChange={(e) => setTarget(e.target.value)} placeholder="70000" className="h-12 rounded-xl" /></Field><Field label="Target date"><Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="h-12 rounded-xl" /></Field></div><Field label="Icon"><Select value={icon} onValueChange={setIcon}><SelectTrigger className="h-12 rounded-xl"><SelectValue /></SelectTrigger><SelectContent>{ICON_OPTIONS.map((v) => <SelectItem key={v} value={v}>{v.replaceAll("-", " ")}</SelectItem>)}</SelectContent></Select></Field><Field label="Color"><div className="flex gap-2">{COLORS.map((v) => <button key={v} type="button" onClick={() => setColor(v)} className={`size-9 rounded-full border-2 ${color === v ? "border-foreground" : "border-transparent"}`} style={{ backgroundColor: v }} />)}</div></Field><Field label="Description"><Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="What are you saving for?" className="h-12 rounded-xl" /></Field><Button className="h-12 w-full rounded-xl" onClick={submit} disabled={upsert.isPending}>{existing ? "Save goal" : "Create goal"}</Button></div></SheetContent></Sheet>;
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) { return <div className="space-y-1.5"><Label className="text-xs">{label}</Label>{children}</div>; }
+
+function GoalDetails({ goal, currency, onClose, onAdd, onEdit }: { goal: SavingGoal; currency: string; onClose: () => void; onAdd: () => void; onEdit: () => void }) {
+  const { data } = useAppData(); const rows = data.savingGoalContributions.filter((c) => c.goal_id === goal.id); const saved = reservedByGoal(goal.id, data.savingGoalContributions); const target = Number(goal.target_amount); const remaining = Math.max(0, target - saved); const percent = target ? Math.min(100, saved / target * 100) : 0; const months = goal.target_date ? Math.max(1, differenceInCalendarMonths(parseISO(goal.target_date), startOfMonth(new Date())) + 1) : null; const monthly = months ? remaining / months : null;
+  return <Sheet open onOpenChange={(v) => !v && onClose()}><SheetContent side="bottom" className="max-h-[92vh] overflow-y-auto rounded-t-3xl"><SheetHeader><SheetTitle>{goal.name}</SheetTitle></SheetHeader><div className="space-y-4 px-4 pb-8"><Section><p className="text-2xl font-extrabold tabular">{formatMoney(saved, currency)}</p><p className="text-xs text-muted-foreground">of {formatMoney(target, currency)} reserved</p><Progress value={percent} className="mt-4 h-3" /><div className="mt-2 flex justify-between text-xs text-muted-foreground"><span>{Math.round(percent)}% complete</span><span>{formatMoney(remaining, currency)} remaining</span></div></Section><Section><div className="grid grid-cols-2 gap-3"><Detail label="Target date" value={goal.target_date ? format(parseISO(goal.target_date), "d MMM yyyy") : "Not set"} /><Detail label="Monthly target" value={monthly !== null && remaining > 0 ? formatMoney(monthly, currency) : "Completed"} /><Detail label="Reserved accounts" value={`${new Set(rows.map((r) => r.account_id)).size}`} /></div>{goal.description && <p className="mt-3 text-xs text-muted-foreground">{goal.description}</p>}</Section><div className="grid grid-cols-2 gap-2"><Button className="h-11 rounded-xl" onClick={onAdd} disabled={remaining <= 0}><CircleDollarSign className="mr-2 size-4" />Add money</Button><Button variant="secondary" className="h-11 rounded-xl" onClick={onEdit}><Pencil className="mr-2 size-4" />Edit</Button></div><Section title={`Contributions (${rows.length})`}>{rows.length ? rows.map((r) => { const account = data.accounts.find((a) => a.id === r.account_id); return <div key={r.id} className="flex items-center gap-3 border-b border-border/60 py-3 last:border-0"><div className="min-w-0 flex-1"><p className="text-sm font-semibold">{format(parseISO(r.date), "d MMM yyyy")}</p><p className="text-[11px] text-muted-foreground">{account?.name ?? "Account"}{r.note ? ` · ${r.note}` : ""}</p></div><span className="tabular text-sm font-bold">{formatMoney(Number(r.amount), currency)}</span></div>; }) : <p className="py-3 text-xs text-muted-foreground">No contributions yet.</p>}</Section></div></SheetContent></Sheet>;
+}
+
+function Detail({ label, value }: { label: string; value: string }) { return <div className="rounded-xl bg-secondary/60 p-3"><p className="text-[10px] text-muted-foreground">{label}</p><p className="mt-1 text-sm font-bold">{value}</p></div>; }
+
+function ContributionForm({ goal, open, onOpenChange }: { goal: SavingGoal; open: boolean; onOpenChange: (v: boolean) => void }) {
+  const { data } = useAppData(); const { currency } = useAppState(); const upsert = useUpsert("saving_goal_contributions"); const [accountId, setAccountId] = useState(""); const [amount, setAmount] = useState(""); const [note, setNote] = useState("");
+  const available = (accountId ? accountBalance(data.accounts.find((a) => a.id === accountId)!, data.transactions) - data.savingGoalContributions.filter((c) => c.account_id === accountId).reduce((n, c) => n + Number(c.amount), 0) : 0);
+  const remaining = Math.max(0, Number(goal.target_amount) - reservedByGoal(goal.id, data.savingGoalContributions));
+  const submit = async () => { const value = Number(amount); if (!accountId || !Number.isFinite(value) || value <= 0) { toast.error("Select an account and enter an amount"); return; } if (value > available) { toast.error(`Only ${formatMoney(available, currency)} is available in this account`); return; } if (value > remaining) { toast.error(`Only ${formatMoney(remaining, currency)} remains for this goal`); return; } try { await upsert.mutateAsync({ goal_id: goal.id, account_id: accountId, amount: value.toFixed(2), date: new Date().toISOString().slice(0, 10), note: note.trim() }); setAmount(""); setNote(""); onOpenChange(false); toast.success("Money reserved for this goal"); } catch (e) { toast.error((e as Error).message); } };
+  return <Sheet open={open} onOpenChange={onOpenChange}><SheetContent side="bottom" className="rounded-t-3xl"><SheetHeader><SheetTitle>Add money to {goal.name}</SheetTitle></SheetHeader><div className="space-y-4 px-4 pb-8"><Field label="Account"><Select value={accountId} onValueChange={setAccountId}><SelectTrigger className="h-12 rounded-xl"><SelectValue placeholder="Select account" /></SelectTrigger><SelectContent>{data.accounts.filter((a) => a.is_active).map((a) => { const balance = accountBalance(a, data.transactions); const reserved = data.savingGoalContributions.filter((c) => c.account_id === a.id).reduce((n, c) => n + Number(c.amount), 0); return <SelectItem key={a.id} value={a.id}>{a.name} · {formatMoney(balance - reserved, a.currency)} available</SelectItem>; })}</SelectContent></Select></Field><Field label="Amount"><Input inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="10000" className="h-12 rounded-xl" /></Field>{accountId && <p className="text-xs text-muted-foreground">Available: {formatMoney(available, currency)} · Goal remaining: {formatMoney(remaining, currency)}</p>}<Field label="Note"><Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Optional note" className="h-12 rounded-xl" /></Field><Button className="h-12 w-full rounded-xl" onClick={submit} disabled={upsert.isPending}>Reserve money</Button></div></SheetContent></Sheet>;
+}

@@ -1,7 +1,7 @@
 import { useCallback } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import type { Account, AppData, Budget, Category, Recurring, Transaction } from "./types";
+import type { Account, AppData, Budget, Category, Recurring, SavingGoal, SavingGoalContribution, Transaction } from "./types";
 
 export const DATA_KEY = ["wallet-data"];
 
@@ -9,34 +9,28 @@ async function fetchAllTransactions(): Promise<Transaction[]> {
   const pageSize = 1000;
   const rows: Transaction[] = [];
   let from = 0;
-
   while (true) {
-    const { data, error } = await supabase
-      .from("transactions")
-      .select("*")
-      .order("date", { ascending: false })
-      .order("created_at", { ascending: false })
-      .range(from, from + pageSize - 1);
+    const { data, error } = await supabase.from("transactions").select("*").order("date", { ascending: false }).order("created_at", { ascending: false }).range(from, from + pageSize - 1);
     if (error) throw error;
-
     const page = (data ?? []) as unknown as Transaction[];
     rows.push(...page);
     if (page.length < pageSize) break;
     from += pageSize;
   }
-
   return rows;
 }
 
 async function fetchAppData(): Promise<AppData> {
-  const [accounts, categories, transactions, budgets, recurring] = await Promise.all([
+  const [accounts, categories, transactions, budgets, recurring, savingGoals, savingGoalContributions] = await Promise.all([
     supabase.from("accounts").select("*").order("created_at"),
     supabase.from("categories").select("*").order("name"),
     fetchAllTransactions(),
     supabase.from("budgets").select("*").order("created_at"),
     supabase.from("recurring_transactions").select("*").order("next_occurrence"),
+    supabase.from("saving_goals").select("*").order("created_at"),
+    supabase.from("saving_goal_contributions").select("*").order("date", { ascending: false }).order("created_at", { ascending: false }),
   ]);
-  const err = accounts.error || categories.error || budgets.error || recurring.error;
+  const err = accounts.error || categories.error || budgets.error || recurring.error || savingGoals.error || savingGoalContributions.error;
   if (err) throw err;
   return {
     accounts: (accounts.data ?? []) as unknown as Account[],
@@ -44,10 +38,12 @@ async function fetchAppData(): Promise<AppData> {
     transactions,
     budgets: (budgets.data ?? []) as unknown as Budget[],
     recurring: (recurring.data ?? []) as unknown as Recurring[],
+    savingGoals: (savingGoals.data ?? []) as unknown as SavingGoal[],
+    savingGoalContributions: (savingGoalContributions.data ?? []) as unknown as SavingGoalContribution[],
   };
 }
 
-const EMPTY: AppData = { accounts: [], categories: [], transactions: [], budgets: [], recurring: [] };
+const EMPTY: AppData = { accounts: [], categories: [], transactions: [], budgets: [], recurring: [], savingGoals: [], savingGoalContributions: [] };
 
 export function useAppData() {
   const query = useQuery({ queryKey: DATA_KEY, queryFn: fetchAppData, staleTime: 60_000, refetchOnWindowFocus: false });
@@ -59,7 +55,14 @@ export function useInvalidateData() {
   return useCallback(() => qc.invalidateQueries({ queryKey: DATA_KEY }), [qc]);
 }
 
-type Table = "accounts" | "categories" | "transactions" | "budgets" | "recurring_transactions";
+type Table = "accounts" | "categories" | "transactions" | "budgets" | "recurring_transactions" | "saving_goals" | "saving_goal_contributions";
+
+function dataKey(table: Table): keyof AppData {
+  if (table === "recurring_transactions") return "recurring";
+  if (table === "saving_goals") return "savingGoals";
+  if (table === "saving_goal_contributions") return "savingGoalContributions";
+  return table;
+}
 
 export function useUpsert(table: Table) {
   const queryClient = useQueryClient();
@@ -77,10 +80,9 @@ export function useUpsert(table: Table) {
     onSuccess: (saved) => {
       queryClient.setQueryData<AppData>(DATA_KEY, (current) => {
         if (!current) return current;
-        const item = saved as Record<string, unknown>;
-        const id = String(item.id ?? "");
-        const key = table === "recurring_transactions" ? "recurring" : table;
-        const rows = current[key as keyof AppData] as unknown as Record<string, unknown>[];
+        const key = dataKey(table);
+        const rows = current[key] as unknown as Record<string, unknown>[];
+        const id = String((saved as Record<string, unknown>).id ?? "");
         const index = rows.findIndex((r) => String(r.id) === id);
         const nextRows = index >= 0 ? rows.map((r, i) => (i === index ? saved : r)) : [saved, ...rows];
         return { ...current, [key]: nextRows } as AppData;
@@ -100,8 +102,8 @@ export function useRemove(table: Table) {
     onSuccess: (id) => {
       queryClient.setQueryData<AppData>(DATA_KEY, (current) => {
         if (!current) return current;
-        const key = table === "recurring_transactions" ? "recurring" : table;
-        const rows = current[key as keyof AppData] as unknown as { id: string }[];
+        const key = dataKey(table);
+        const rows = current[key] as unknown as { id: string }[];
         return { ...current, [key]: rows.filter((row) => row.id !== id) } as AppData;
       });
     },

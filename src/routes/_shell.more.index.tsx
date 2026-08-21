@@ -1,15 +1,17 @@
 import { createFileRoute, Link } from "@/router";
-import { ChevronRight, Wallet, ArrowLeftRight, Repeat, Settings, Tags, LogOut } from "lucide-react";
+import { ChevronRight, Wallet, ArrowLeftRight, Repeat, Settings, Tags, LogOut, PiggyBank } from "lucide-react";
 import { toast } from "sonner";
 import { ScreenHeader, Section } from "@/components/app/pieces";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 
-export const Route = createFileRoute("/_shell/more/")({ head: () => ({ meta: [{ title: "More — Paisa Expense Manager" }, { name: "description", content: "Accounts, transactions, categories, recurring payments and settings for your expense manager." }] }), component: MorePage });
+export const Route = createFileRoute("/_shell/more/")({ head: () => ({ meta: [{ title: "More — Paisa Expense Manager" }, { name: "description", content: "Accounts, transactions, categories, recurring payments, saving goals and settings for your expense manager." }] }), component: MorePage });
 const LINKS = [
   { to: "/accounts", label: "Accounts", desc: "Manage accounts and balances", icon: Wallet },
   { to: "/transactions", label: "Transactions", desc: "Search and manage activity", icon: ArrowLeftRight },
   { to: "/more/categories", label: "Categories", desc: "Manage categories and subcategories", icon: Tags },
+  { to: "/more/budgets", label: "Budgets", desc: "Set spending limits by category", icon: PiggyBank },
+  { to: "/more/saving-goals", label: "Saving Goals", desc: "Track money you are saving for", icon: PiggyBank },
   { to: "/more/recurring", label: "Recurring", desc: "Subscriptions and repeat bills", icon: Repeat },
   { to: "/more/settings", label: "Settings", desc: "Currency, theme and data", icon: Settings },
 ] as const;

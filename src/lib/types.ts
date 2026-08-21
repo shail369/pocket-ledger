@@ -56,10 +56,35 @@ export interface Recurring {
   is_active: boolean;
 }
 
+export interface SavingGoal {
+  id: string;
+  name: string;
+  target_amount: number;
+  target_date: string | null;
+  icon: string;
+  color: string;
+  description: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SavingGoalContribution {
+  id: string;
+  goal_id: string;
+  account_id: string;
+  transaction_id: string | null;
+  amount: number;
+  date: string;
+  note: string;
+  created_at: string;
+}
+
 export interface AppData {
   accounts: Account[];
   categories: Category[];
   transactions: Transaction[];
   budgets: Budget[];
   recurring: Recurring[];
+  savingGoals: SavingGoal[];
+  savingGoalContributions: SavingGoalContribution[];
 }

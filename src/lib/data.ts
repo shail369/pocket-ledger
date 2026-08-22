@@ -21,9 +21,6 @@ async function fetchAllTransactions(): Promise<Transaction[]> {
 }
 
 async function fetchAppData(): Promise<AppData> {
-  // Core application data must never be blocked by the optional Saving Goals
-  // tables. This keeps existing accounts, transactions, budgets and recurring
-  // data visible even if the Saving Goals migration has not reached the backend yet.
   const [accounts, categories, transactions, budgets, recurring] = await Promise.all([
     supabase.from("accounts").select("*").order("created_at"),
     supabase.from("categories").select("*").order("name"),
@@ -31,18 +28,12 @@ async function fetchAppData(): Promise<AppData> {
     supabase.from("budgets").select("*").order("created_at"),
     supabase.from("recurring_transactions").select("*").order("next_occurrence"),
   ]);
-
   const coreError = accounts.error || categories.error || budgets.error || recurring.error;
   if (coreError) throw coreError;
-
-  // Saving Goals are an additive feature. If either new table is unavailable
-  // (for example before Supabase migrations have been applied), fall back to
-  // empty goal data rather than failing the entire wallet-data query.
   const [savingGoals, savingGoalContributions] = await Promise.all([
     supabase.from("saving_goals").select("*").order("created_at"),
     supabase.from("saving_goal_contributions").select("*").order("date", { ascending: false }).order("created_at", { ascending: false }),
   ]);
-
   return {
     accounts: (accounts.data ?? []) as unknown as Account[],
     categories: (categories.data ?? []) as unknown as Category[],
@@ -106,6 +97,10 @@ export function useRemove(table: Table) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
+      if (table === "saving_goals") {
+        const { error: contributionError } = await supabase.from("saving_goal_contributions").delete().eq("goal_id", id);
+        if (contributionError) throw contributionError;
+      }
       const { error } = await supabase.from(table).delete().eq("id", id);
       if (error) throw error;
       return id;
@@ -113,9 +108,12 @@ export function useRemove(table: Table) {
     onSuccess: (id) => {
       queryClient.setQueryData<AppData>(DATA_KEY, (current) => {
         if (!current) return current;
+        const next = { ...current };
         const key = dataKey(table);
-        const rows = current[key] as unknown as { id: string }[];
-        return { ...current, [key]: rows.filter((row) => row.id !== id) } as AppData;
+        const rows = next[key] as unknown as { id: string }[];
+        next[key] = rows.filter((row) => row.id !== id) as never;
+        if (table === "saving_goals") next.savingGoalContributions = next.savingGoalContributions.filter((c) => c.goal_id !== id);
+        return next;
       });
     },
   });

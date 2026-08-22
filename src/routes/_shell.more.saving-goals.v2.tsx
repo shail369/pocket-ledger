@@ -21,6 +21,12 @@ import type { SavingGoal } from "@/lib/types";
 export const Route = createFileRoute("/_shell/more/saving-goals")({ component: SavingGoalsPage });
 const COLORS = ["#2563eb", "#16a34a", "#a855f7", "#f97316", "#e11d48", "#0891b2"];
 
+const todayLocal = () => {
+  const now = new Date();
+  const local = new Date(now.getTime() - now.getTimezoneOffset() * 60_000);
+  return local.toISOString().slice(0, 10);
+};
+
 function SavingGoalsPage() {
   const { data } = useAppData();
   const { currency } = useAppState();
@@ -56,10 +62,43 @@ function GoalCard({ goal, saved, currency, onOpen, onEdit, onDelete }: { goal: S
 }
 
 function GoalForm({ open, onOpenChange, existing }: { open: boolean; onOpenChange: (v: boolean) => void; existing: SavingGoal | null }) {
-  const upsert = useUpsert("saving_goals"); const [name, setName] = useState(""); const [target, setTarget] = useState(""); const [date, setDate] = useState(""); const [icon, setIcon] = useState("piggy-bank"); const [color, setColor] = useState(COLORS[0]); const [description, setDescription] = useState("");
-  const reset = () => { setName(existing?.name ?? ""); setTarget(existing ? String(existing.target_amount) : ""); setDate(existing?.target_date ?? ""); setIcon(existing?.icon ?? "piggy-bank"); setColor(existing?.color ?? COLORS[0]); setDescription(existing?.description ?? ""); };
-  const submit = async () => { const amount = Number(target); if (!name.trim() || !Number.isFinite(amount) || amount <= 0) { toast.error("Enter a name and target amount greater than zero"); return; } try { await upsert.mutateAsync({ ...(existing ? { id: existing.id } : {}), name: name.trim(), target_amount: amount.toFixed(2), target_date: date || null, icon, color, description: description.trim() }); onOpenChange(false); toast.success(existing ? "Goal updated" : "Goal created"); } catch (e) { toast.error((e as Error).message); } };
-  return <Sheet open={open} onOpenChange={(v) => { if (v) reset(); onOpenChange(v); }}><SheetContent side="bottom" className="max-h-[90vh] overflow-y-auto rounded-t-3xl"><SheetHeader><SheetTitle>{existing ? "Edit saving goal" : "New saving goal"}</SheetTitle></SheetHeader><div className="space-y-4 px-4 pb-8"><Field label="Goal name"><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="New laptop" className="h-12 rounded-xl" /></Field><div className="grid grid-cols-2 gap-3"><Field label="Target amount"><Input inputMode="decimal" value={target} onChange={(e) => setTarget(e.target.value)} placeholder="70000" className="h-12 rounded-xl" /></Field><Field label="Target date"><Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="h-12 rounded-xl" /></Field></div><Field label="Icon"><Select value={icon} onValueChange={setIcon}><SelectTrigger className="h-12 rounded-xl"><SelectValue /></SelectTrigger><SelectContent>{ICON_OPTIONS.map((v) => <SelectItem key={v} value={v}>{v.replaceAll("-", " ")}</SelectItem>)}</SelectContent></Select></Field><Field label="Color"><div className="flex gap-2">{COLORS.map((v) => <button key={v} type="button" onClick={() => setColor(v)} className={`size-9 rounded-full border-2 ${color === v ? "border-foreground" : "border-transparent"}`} style={{ backgroundColor: v }} />)}</div></Field><Field label="Description"><Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="What are you saving for?" className="h-12 rounded-xl" /></Field><Button className="h-12 w-full rounded-xl" onClick={submit} disabled={upsert.isPending}>{existing ? "Save goal" : "Create goal"}</Button></div></SheetContent></Sheet>;
+  const upsert = useUpsert("saving_goals");
+  const [name, setName] = useState("");
+  const [target, setTarget] = useState("");
+  const [date, setDate] = useState("");
+  const [icon, setIcon] = useState("");
+  const [color, setColor] = useState("");
+  const [description, setDescription] = useState("");
+
+  const reset = () => {
+    setName(existing?.name ?? "");
+    setTarget(existing ? String(existing.target_amount) : "");
+    setDate(existing?.target_date ?? todayLocal());
+    setIcon(existing?.icon ?? "");
+    setColor(existing?.color ?? "");
+    setDescription(existing?.description ?? "");
+  };
+
+  const submit = async () => {
+    const amount = Number(target);
+    if (!name.trim() || !Number.isFinite(amount) || amount <= 0) { toast.error("Enter a name and target amount greater than zero"); return; }
+    if (!icon) { toast.error("Select an icon"); return; }
+    if (!color) { toast.error("Select a color"); return; }
+    try {
+      await upsert.mutateAsync({ ...(existing ? { id: existing.id } : {}), name: name.trim(), target_amount: amount.toFixed(2), target_date: date || null, icon, color, description: description.trim() });
+      onOpenChange(false);
+      toast.success(existing ? "Goal updated" : "Goal created");
+    } catch (e) { toast.error((e as Error).message); }
+  };
+
+  return <Sheet open={open} onOpenChange={(v) => { if (v) reset(); onOpenChange(v); }}><SheetContent side="bottom" className="max-h-[90vh] overflow-y-auto rounded-t-3xl"><SheetHeader><SheetTitle>{existing ? "Edit saving goal" : "New saving goal"}</SheetTitle></SheetHeader><div className="space-y-4 px-4 pb-8">
+    <Field label="Goal name"><Input value={name} onChange={(e) => setName(e.target.value)} className="h-12 rounded-xl" /></Field>
+    <div className="grid grid-cols-2 gap-3"><Field label="Target amount"><Input inputMode="decimal" value={target} onChange={(e) => setTarget(e.target.value)} className="h-12 rounded-xl" /></Field><Field label="Target date"><Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="h-12 rounded-xl" /></Field></div>
+    <Field label="Icon"><div className="flex gap-2 overflow-x-auto pb-1 pr-1 scrollbar-thin">{ICON_OPTIONS.map((v) => <button key={v} type="button" aria-label={v.replaceAll("-", " ")} onClick={() => setIcon(v)} className={`grid size-10 shrink-0 place-items-center rounded-xl border-2 transition-colors ${icon === v ? "border-foreground bg-secondary" : "border-transparent bg-secondary/60 hover:bg-secondary"}`}><AppIcon name={v} className="size-5" /></button>)}</div></Field>
+    <Field label="Color"><div className="flex gap-2 overflow-x-auto pb-1">{COLORS.map((v) => <button key={v} type="button" aria-label="Select color" onClick={() => setColor(v)} className={`size-9 shrink-0 rounded-full border-2 ${color === v ? "border-foreground" : "border-transparent"}`} style={{ backgroundColor: v }} />)}</div></Field>
+    <Field label="Description"><Input value={description} onChange={(e) => setDescription(e.target.value)} className="h-12 rounded-xl" /></Field>
+    <Button className="h-12 w-full rounded-xl" onClick={submit} disabled={upsert.isPending}>{existing ? "Save goal" : "Create goal"}</Button>
+  </div></SheetContent></Sheet>;
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) { return <div className="space-y-1.5"><Label className="text-xs">{label}</Label>{children}</div>; }
@@ -75,6 +114,6 @@ function ContributionForm({ goal, open, onOpenChange }: { goal: SavingGoal; open
   const { data } = useAppData(); const { currency } = useAppState(); const upsert = useUpsert("saving_goal_contributions"); const [accountId, setAccountId] = useState(""); const [amount, setAmount] = useState(""); const [note, setNote] = useState("");
   const available = (accountId ? accountBalance(data.accounts.find((a) => a.id === accountId)!, data.transactions) - data.savingGoalContributions.filter((c) => c.account_id === accountId).reduce((n, c) => n + Number(c.amount), 0) : 0);
   const remaining = Math.max(0, Number(goal.target_amount) - reservedByGoal(goal.id, data.savingGoalContributions));
-  const submit = async () => { const value = Number(amount); if (!accountId || !Number.isFinite(value) || value <= 0) { toast.error("Select an account and enter an amount"); return; } if (value > available) { toast.error(`Only ${formatMoney(available, currency)} is available in this account`); return; } if (value > remaining) { toast.error(`Only ${formatMoney(remaining, currency)} remains for this goal`); return; } try { await upsert.mutateAsync({ goal_id: goal.id, account_id: accountId, amount: value.toFixed(2), date: new Date().toISOString().slice(0, 10), note: note.trim() }); setAmount(""); setNote(""); onOpenChange(false); toast.success("Money reserved for this goal"); } catch (e) { toast.error((e as Error).message); } };
+  const submit = async () => { const value = Number(amount); if (!accountId || !Number.isFinite(value) || value <= 0) { toast.error("Select an account and enter an amount"); return; } if (value > available) { toast.error(`Only ${formatMoney(available, currency)} is available in this account`); return; } if (value > remaining) { toast.error(`Only ${formatMoney(remaining, currency)} remains for this goal`); return; } try { await upsert.mutateAsync({ goal_id: goal.id, account_id: accountId, amount: value.toFixed(2), date: todayLocal(), note: note.trim() }); setAmount(""); setNote(""); onOpenChange(false); toast.success("Money reserved for this goal"); } catch (e) { toast.error((e as Error).message); } };
   return <Sheet open={open} onOpenChange={onOpenChange}><SheetContent side="bottom" className="rounded-t-3xl"><SheetHeader><SheetTitle>Add money to {goal.name}</SheetTitle></SheetHeader><div className="space-y-4 px-4 pb-8"><Field label="Account"><Select value={accountId} onValueChange={setAccountId}><SelectTrigger className="h-12 rounded-xl"><SelectValue placeholder="Select account" /></SelectTrigger><SelectContent>{data.accounts.filter((a) => a.is_active).map((a) => { const balance = accountBalance(a, data.transactions); const reserved = data.savingGoalContributions.filter((c) => c.account_id === a.id).reduce((n, c) => n + Number(c.amount), 0); return <SelectItem key={a.id} value={a.id}>{a.name} · {formatMoney(balance - reserved, a.currency)} available</SelectItem>; })}</SelectContent></Select></Field><Field label="Amount"><Input inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="10000" className="h-12 rounded-xl" /></Field>{accountId && <p className="text-xs text-muted-foreground">Available: {formatMoney(available, currency)} · Goal remaining: {formatMoney(remaining, currency)}</p>}<Field label="Note"><Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Optional note" className="h-12 rounded-xl" /></Field><Button className="h-12 w-full rounded-xl" onClick={submit} disabled={upsert.isPending}>Reserve money</Button></div></SheetContent></Sheet>;
 }

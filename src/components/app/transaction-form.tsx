@@ -22,6 +22,12 @@ const TYPES: { key: TxType; label: string }[] = [
   { key: "transfer", label: "Transfer" },
 ];
 
+const today = () => {
+  const now = new Date();
+  const local = new Date(now.getTime() - now.getTimezoneOffset() * 60_000);
+  return local.toISOString().slice(0, 10);
+};
+
 export function TransactionForm({
   open,
   onOpenChange,
@@ -41,7 +47,7 @@ export function TransactionForm({
   const [toAccountId, setToAccountId] = useState("");
   const [parentId, setParentId] = useState("");
   const [subId, setSubId] = useState("");
-  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  const [date, setDate] = useState(today());
   const [description, setDescription] = useState("");
 
   const parents = useMemo(
@@ -77,7 +83,7 @@ export function TransactionForm({
       setToAccountId("");
       setParentId("");
       setSubId("");
-      setDate(new Date().toISOString().slice(0, 10));
+      setDate(today());
       setDescription("");
     }
   }, [open, existing, data.accounts, data.categories]);
@@ -227,7 +233,7 @@ export function TransactionForm({
                     ))}
                 </SelectContent>
               </Select>
-            </Field>
+            </Select>
           ) : (
             <>
               <Field label="Category">
@@ -270,18 +276,14 @@ export function TransactionForm({
           )}
 
           <Field label="Date">
-            <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="h-12 rounded-xl" />
-          </Field>
-          <Field label="Description">
-            <Input
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="e.g. Groceries at DMart"
-              className="h-12 rounded-xl"
-            />
+            <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="h-12 w-full rounded-xl" />
           </Field>
 
-          <Button className="h-12 w-full rounded-xl text-base" onClick={submit} disabled={upsert.isPending}>
+          <Field label="Description">
+            <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Optional description" className="h-12 w-full rounded-xl" />
+          </Field>
+
+          <Button className="h-12 w-full rounded-xl" onClick={submit} disabled={upsert.isPending}>
             {existing ? "Save changes" : "Add transaction"}
           </Button>
         </div>
@@ -291,10 +293,5 @@ export function TransactionForm({
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="space-y-1.5">
-      <Label className="text-xs font-medium text-muted-foreground">{label}</Label>
-      {children}
-    </div>
-  );
+  return <div className="space-y-1.5"><Label className="text-xs">{label}</Label>{children}</div>;
 }

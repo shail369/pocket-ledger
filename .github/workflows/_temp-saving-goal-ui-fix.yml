@@ -1,19 +1,17 @@
 name: Temporary saving goal UI fix
 
 on:
-  push:
-    branches:
-      - fix/saving-goal-icon-picker
+  pull_request:
+    types: [opened]
     paths:
       - '.github/workflows/_temp-saving-goal-ui-fix.yml'
-      - 'src/routes/_shell.more.saving-goals.tsx'
 
 permissions:
   contents: write
 
 jobs:
   fix:
-    if: github.event.head_commit.message != 'fix: saving goal form UI'
+    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -30,7 +28,6 @@ jobs:
 
           s = s.replace('import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";\n', '')
           s = s.replace('const DEFAULT_ICON = "piggy-bank";\n', '')
-
           s = s.replace('const [icon, setIcon] = useState(DEFAULT_ICON); const [color, setColor] = useState(ICON_COLORS[0]);', 'const [icon, setIcon] = useState(""); const [color, setColor] = useState("");')
           s = s.replace('setIcon(existing?.icon ?? DEFAULT_ICON); setColor(existing?.color ?? ICON_COLORS[0]);', 'setIcon(existing?.icon ?? ""); setColor(existing?.color ?? "");')
 
@@ -39,9 +36,7 @@ jobs:
           if old not in s:
               raise SystemExit('icon selector block not found')
           s = s.replace(old, new)
-
           s = s.replace('icon, color, description: description.trim()', '...(icon ? { icon } : {}), ...(color ? { color } : {}), description: description.trim()')
-
           p.write_text(s)
 
       - name: Commit and clean up

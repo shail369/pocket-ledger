@@ -22,8 +22,22 @@ jobs:
     timeout-minutes: 40
 
     steps:
-      - name: Checkout
+      - name: Checkout main
         uses: actions/checkout@v4
+        with:
+          ref: main
+          clean: true
+          fetch-depth: 1
+
+      - name: Verify source revision
+        run: |
+          echo "Building commit: $(git rev-parse HEAD)"
+          echo "Branch: $(git branch --show-current)"
+          test "$(git branch --show-current)" = "main"
+          if grep -R -n -E 'New laptop|What are you saving for\?|placeholder=[\"'\''`]70000[\"'\''`]' src --exclude-dir=node_modules; then
+            echo "::error::Old Saving Goal placeholders are still present in source."
+            exit 1
+          fi
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -51,7 +65,14 @@ jobs:
         run: npm run build:mobile
 
       - name: Verify web build output
-        run: test -f dist/index.html && test -d dist/assets
+        run: |
+          test -f dist/index.html
+          test -d dist/assets
+          if grep -R -n -E 'New laptop|What are you saving for\?|70000' dist; then
+            echo "::error::Old Saving Goal UI was emitted into the mobile web build."
+            exit 1
+          fi
+          echo "Saving Goal UI verification passed."
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -69,6 +90,14 @@ jobs:
 
       - name: Sync Capacitor Android project
         run: npx cap sync android
+
+      - name: Verify synced Android web assets
+        run: |
+          if grep -R -n -E 'New laptop|What are you saving for\?|70000' android/app/src/main/assets/public; then
+            echo "::error::Old Saving Goal UI was copied into Android assets."
+            exit 1
+          fi
+          echo "Android asset verification passed."
 
       - name: Build APK
         working-directory: android

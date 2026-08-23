@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@/router";
-import { ChevronRight, Wallet, ArrowLeftRight, Repeat, Settings, Tags, LogOut, PiggyBank, Scale } from "lucide-react";
+import { ChevronRight, Wallet, ArrowLeftRight, Repeat, Settings, Tags, LogOut, PiggyBank, Scale, FileBarChart } from "lucide-react";
 import { toast } from "sonner";
 import { ScreenHeader, Section } from "@/components/app/pieces";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,6 +12,7 @@ const LINKS = [
   { to: "/more/categories", label: "Categories", desc: "Manage categories and subcategories", icon: Tags },
   { to: "/more/saving-goals", label: "Saving Goals", desc: "Track money you are saving for", icon: PiggyBank },
   { to: "/more/assets", label: "Assets & Liabilities", desc: "Track what you own and owe", icon: Scale },
+  { to: "/more/reports", label: "Reports", desc: "View detailed financial reports", icon: FileBarChart },
   { to: "/more/recurring", label: "Recurring", desc: "Subscriptions and repeat bills", icon: Repeat },
   { to: "/more/settings", label: "Settings", desc: "Currency, theme and data", icon: Settings },
 ] as const;

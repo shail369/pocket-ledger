@@ -10,7 +10,6 @@ const LINKS = [
   { to: "/accounts", label: "Accounts", desc: "Manage accounts and balances", icon: Wallet },
   { to: "/transactions", label: "Transactions", desc: "Search and manage activity", icon: ArrowLeftRight },
   { to: "/more/categories", label: "Categories", desc: "Manage categories and subcategories", icon: Tags },
-  { to: "/more/budgets", label: "Budgets", desc: "Set spending limits by category", icon: PiggyBank },
   { to: "/more/saving-goals", label: "Saving Goals", desc: "Track money you are saving for", icon: PiggyBank },
   { to: "/more/recurring", label: "Recurring", desc: "Subscriptions and repeat bills", icon: Repeat },
   { to: "/more/settings", label: "Settings", desc: "Currency, theme and data", icon: Settings },

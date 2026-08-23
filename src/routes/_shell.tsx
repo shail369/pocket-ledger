@@ -1,6 +1,6 @@
 import { Link, Outlet, useRouterState } from "@/router";
 import { useState } from "react";
-import { LayoutGrid, PieChart, Menu, Plus, PiggyBank, FileBarChart } from "lucide-react";
+import { LayoutGrid, PieChart, Menu, Plus, PiggyBank, Scale } from "lucide-react";
 import { TransactionForm } from "@/components/app/transaction-form";
 import { AccountSelector } from "@/components/app/selectors";
 
@@ -12,7 +12,7 @@ const NAV = [
   { to: "/", label: "Home", icon: LayoutGrid },
   { to: "/insights", label: "Insights", icon: PieChart },
   { to: "/more/budgets", label: "Budgets", icon: PiggyBank },
-  { to: "/more/reports", label: "Reports", icon: FileBarChart },
+  { to: "/more/assets", label: "Assets", icon: Scale },
   { to: "/more", label: "More", icon: Menu },
 ] as const;
 

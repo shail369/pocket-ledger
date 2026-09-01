@@ -8,15 +8,16 @@ import { useAppData } from "@/lib/data";
 import { useAppState } from "@/lib/app-state";
 import { formatMoney } from "@/lib/format";
 import { budgetProgress, periodTransactions, totals } from "@/lib/finance";
+import type { Account, Transaction } from "@/lib/types";
 
 export const Route = createFileRoute("/_shell/")({
   head: () => ({ meta: [{ title: "Dashboard — Paisa Expense Manager" }, { name: "description", content: "A compact mobile overview of your balance, spending and budgets." }] }),
   component: Dashboard,
 });
 
-function periodBalance(accounts: typeof Array.prototype, transactions: typeof Array.prototype, accountId: string) {
-  const list = accountId === "all" ? accounts.filter((a: any) => a.is_active) : accounts.filter((a: any) => a.id === accountId);
-  return list.reduce((total: number, account: any) => {
+function periodBalance(accounts: Account[], transactions: Transaction[], accountId: string) {
+  const list = accountId === "all" ? accounts.filter((a) => a.is_active) : accounts.filter((a) => a.id === accountId);
+  return list.reduce((total, account) => {
     let balance = Number(account.opening_balance);
     for (const t of transactions) {
       const amount = Number(t.amount);

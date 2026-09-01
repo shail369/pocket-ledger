@@ -1,4 +1,4 @@
-import { endOfMonth, format, parseISO, startOfMonth, addMonths, differenceInCalendarDays } from "date-fns";
+import { endOfMonth, format, parseISO, startOfMonth, addMonths, differenceInCalendarDays, startOfWeek, endOfWeek } from "date-fns";
 import type { Budget, Category, Transaction } from "./types";
 
 export type BudgetState = "ok" | "warning" | "over";
@@ -12,8 +12,15 @@ function amount(rows: Transaction[]) { return rows.reduce((sum, t) => sum + Numb
 function rangeForMonth(month: Date) { return { from: startOfMonth(month), to: endOfMonth(month), label: format(month, "MMMM yyyy") }; }
 
 export function calculateBudgetProgress(budget: Budget, txs: Transaction[], categories: Category[], reference = new Date(), monthOverride?: Date): BudgetProgress {
-  const month = monthOverride ?? parseISO(budget.start_date);
-  const range = rangeForMonth(month);
+  // A budget on the Budgets page represents its current period. The stored
+  // start_date is the creation/start date of the budget, not the month whose
+  // spending should be displayed forever. Historical reports explicitly pass
+  // monthOverride so they can still calculate an older month.
+  const range = monthOverride
+    ? rangeForMonth(monthOverride)
+    : budget.period === "weekly"
+      ? { from: startOfWeek(reference, { weekStartsOn: 1 }), to: endOfWeek(reference, { weekStartsOn: 1 }), label: "This week" }
+      : { from: startOfMonth(reference), to: endOfMonth(reference), label: "This month" };
   const rows = scoped(txs, budget.account_id ?? "all").filter((t) => t.type === "expense" && inRange(t, range.from, range.to));
   const ids = budget.category_id ? new Set([budget.category_id, ...categories.filter((c) => c.parent_id === budget.category_id).map((c) => c.id)]) : null;
   const spent = amount(rows.filter((t) => !ids || (t.category_id && ids.has(t.category_id))));
@@ -31,7 +38,10 @@ export function budgetProgressFixed(budgets: Budget[], txs: Transaction[], categ
   const source = budgets.filter((b) => b.account_id && (accountId === "all" || b.account_id === accountId));
   // Keep every real budget as its own row. This makes every budget directly
   // editable/deletable even when All Accounts is selected.
-  return source.map((b) => calculateBudgetProgress(b, txs, categories)).sort((a, b) => b.percent - a.percent);
+  // Always use the current date here so monthly/weekly budgets roll forward
+  // automatically when the calendar period changes.
+  const reference = new Date();
+  return source.map((b) => calculateBudgetProgress(b, txs, categories, reference)).sort((a, b) => b.percent - a.percent);
 }
 
 function activeMonthlyBudgetsForMonth(budgets: Budget[], month: Date, accountId: string): Budget[] {

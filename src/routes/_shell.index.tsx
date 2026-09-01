@@ -7,19 +7,36 @@ import { Progress } from "@/components/ui/progress";
 import { useAppData } from "@/lib/data";
 import { useAppState } from "@/lib/app-state";
 import { formatMoney } from "@/lib/format";
-import { budgetProgress, periodTransactions, totalBalance, totals } from "@/lib/finance";
+import { budgetProgress, periodTransactions, totals } from "@/lib/finance";
 
 export const Route = createFileRoute("/_shell/")({
   head: () => ({ meta: [{ title: "Dashboard — Paisa Expense Manager" }, { name: "description", content: "A compact mobile overview of your balance, spending and budgets." }] }),
   component: Dashboard,
 });
 
+function periodBalance(accounts: typeof Array.prototype, transactions: typeof Array.prototype, accountId: string) {
+  const list = accountId === "all" ? accounts.filter((a: any) => a.is_active) : accounts.filter((a: any) => a.id === accountId);
+  return list.reduce((total: number, account: any) => {
+    let balance = Number(account.opening_balance);
+    for (const t of transactions) {
+      const amount = Number(t.amount);
+      if (t.type === "income" && t.account_id === account.id) balance += amount;
+      if (t.type === "expense" && t.account_id === account.id) balance -= amount;
+      if (t.type === "transfer") {
+        if (t.account_id === account.id) balance -= amount;
+        if (t.transfer_account_id === account.id) balance += amount;
+      }
+    }
+    return total + balance;
+  }, 0);
+}
+
 function Dashboard() {
   const { data } = useAppData();
   const { accountId, range, currency } = useAppState();
   const scoped = periodTransactions(data.transactions, accountId, range);
   const t = totals(scoped);
-  const balance = totalBalance(data.accounts, data.transactions, accountId);
+  const balance = periodBalance(data.accounts, scoped, accountId);
   const budgets = budgetProgress(data.budgets, data.transactions, data.categories, accountId);
   const upcoming = data.recurring.filter((r) => r.is_active && (accountId === "all" || r.account_id === accountId)).slice(0, 3);
 

@@ -39,3 +39,23 @@ export function useRemove(table: Table) {
   const queryClient = useQueryClient();
   return useMutation({ mutationFn: async (id: string) => { if (table === "saving_goals") { const { error: contributionError } = await supabase.from("saving_goal_contributions").delete().eq("goal_id", id); if (contributionError) throw contributionError; } const { error } = await tableClient(table).delete().eq("id", id); if (error) throw error; return id; }, onSuccess: (id) => { queryClient.setQueryData<AppData>(DATA_KEY, (current) => { if (!current) return current; const next = { ...current }; const key = dataKey(table); const rows = next[key] as unknown as { id: string }[]; next[key] = rows.filter((row) => row.id !== id) as never; if (table === "saving_goals") next.savingGoalContributions = next.savingGoalContributions.filter((c) => c.goal_id !== id); return next; }); } });
 }
+
+export function useRemoveBudgetSeries() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (budget: Budget) => {
+      const { data: userRes } = await supabase.auth.getUser();
+      let query = supabase.from("budgets").delete().eq("user_id", userRes.user?.id).eq("account_id", budget.account_id).eq("period", budget.period);
+      query = budget.category_id === null ? query.is("category_id", null) : query.eq("category_id", budget.category_id);
+      const { error } = await query;
+      if (error) throw error;
+      return budget;
+    },
+    onSuccess: (budget) => {
+      queryClient.setQueryData<AppData>(DATA_KEY, (current) => {
+        if (!current) return current;
+        return { ...current, budgets: current.budgets.filter((b) => !(b.account_id === budget.account_id && b.period === budget.period && b.category_id === budget.category_id)) };
+      });
+    },
+  });
+}

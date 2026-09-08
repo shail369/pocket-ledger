@@ -7,7 +7,8 @@ import { EmptyState, ScreenHeader, Section, StatCard } from "@/components/app/pi
 import { useAppData } from "@/lib/data";
 import { useAppState } from "@/lib/app-state";
 import { formatMoney, percent } from "@/lib/format";
-import { budgetProgress, categoryBreakdown, dailySeries, periodTransactions, projectMonth, projectionSeries, scopeTransactions, totals } from "@/lib/finance";
+import { categoryBreakdown, dailySeries, periodTransactions, projectMonth, projectionSeries, scopeTransactions, totals } from "@/lib/finance";
+import { budgetProgressFixed } from "@/lib/budget-analysis";
 
 export const Route = createFileRoute("/_shell/insights")({
   head: () => ({ meta: [{ title: "Insights — Paisa Expense Manager" }, { name: "description", content: "Spending trends, category analysis and end-of-month projections for your money." }] }),
@@ -21,7 +22,10 @@ function InsightsPage() {
   const all = useMemo(() => scopeTransactions(data.transactions, accountId), [data.transactions, accountId]);
   const t = totals(scoped);
   const nodes = categoryBreakdown(scoped, data.categories);
-  const budgets = budgetProgress(data.budgets, data.transactions, data.categories, accountId);
+  // Use the same effective-version budget resolver as the Budgets page. This is
+  // important when a budget was changed in a later month: Insights must not
+  // resurrect the old value (for example ₹10,000) while Budgets shows ₹5,000.
+  const budgets = budgetProgressFixed(data.budgets, data.transactions, data.categories, accountId);
   const projection = projectMonth(all);
   const series = projectionSeries(all);
   const savingsRate = t.income > 0 ? (t.savings / t.income) * 100 : 0;

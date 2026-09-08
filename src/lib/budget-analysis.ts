@@ -12,10 +12,9 @@ function amount(rows: Transaction[]) { return rows.reduce((sum, t) => sum + Numb
 function rangeForMonth(month: Date) { return { from: startOfMonth(month), to: endOfMonth(month), label: format(month, "MMMM yyyy") }; }
 
 export function calculateBudgetProgress(budget: Budget, txs: Transaction[], categories: Category[], reference = new Date(), monthOverride?: Date): BudgetProgress {
-  // A budget on the Budgets page represents its current period. The stored
-  // start_date is the creation/start date of the budget, not the month whose
-  // spending should be displayed forever. Historical reports explicitly pass
-  // monthOverride so they can still calculate an older month.
+  // A budget represents the amount that is effective from its start_date onward.
+  // Historical reports explicitly pass monthOverride so an older budget version
+  // can continue to represent the month in which it was active.
   const range = monthOverride
     ? rangeForMonth(monthOverride)
     : budget.period === "weekly"
@@ -34,14 +33,39 @@ export function calculateBudgetProgress(budget: Budget, txs: Transaction[], cate
   return { budget, categoryName: cat?.name ?? "Overall budget", icon: cat?.icon ?? "wallet", spent, remaining: budgetAmount - spent, percent: budgetAmount > 0 ? (spent / budgetAmount) * 100 : 0, state: status(spent, budgetAmount), projected, projectedState: status(projected, budgetAmount), rangeLabel: range.label };
 }
 
+function periodStart(period: Budget["period"], reference: Date) {
+  return period === "weekly" ? startOfWeek(reference, { weekStartsOn: 1 }) : startOfMonth(reference);
+}
+
+function budgetKey(budget: Budget) {
+  return `${budget.account_id}|${budget.category_id ?? "overall"}|${budget.period}`;
+}
+
 export function budgetProgressFixed(budgets: Budget[], txs: Transaction[], categories: Category[], accountId: string): BudgetProgress[] {
-  const source = budgets.filter((b) => b.account_id && (accountId === "all" || b.account_id === accountId));
-  // Keep every real budget as its own row. This makes every budget directly
-  // editable/deletable even when All Accounts is selected.
-  // Always use the current date here so monthly/weekly budgets roll forward
-  // automatically when the calendar period changes.
   const reference = new Date();
-  return source.map((b) => calculateBudgetProgress(b, txs, categories, reference)).sort((a, b) => b.percent - a.percent);
+  const currentPeriodStart = new Map<Budget["period"], Date>([
+    ["monthly", periodStart("monthly", reference)],
+    ["weekly", periodStart("weekly", reference)],
+  ]);
+  const latest = new Map<string, Budget>();
+
+  for (const budget of budgets) {
+    if (!budget.account_id || (accountId !== "all" && budget.account_id !== accountId)) continue;
+    const effectiveStart = currentPeriodStart.get(budget.period)!;
+    if (parseISO(budget.start_date) > effectiveStart) continue;
+    const key = budgetKey(budget);
+    const existing = latest.get(key);
+    if (!existing || budget.start_date > existing.start_date || (budget.start_date === existing.start_date && budget.id > existing.id)) {
+      latest.set(key, budget);
+    }
+  }
+
+  // Budget edits create a new effective version for the new period. Only the
+  // latest version is shown here, while monthlyBudgetReport can still select
+  // the correct historical version for each past month.
+  return [...latest.values()]
+    .map((budget) => calculateBudgetProgress(budget, txs, categories, reference))
+    .sort((a, b) => b.percent - a.percent);
 }
 
 function activeMonthlyBudgetsForMonth(budgets: Budget[], month: Date, accountId: string): Budget[] {
@@ -49,7 +73,7 @@ function activeMonthlyBudgetsForMonth(budgets: Budget[], month: Date, accountId:
   const eligible = budgets.filter((b) => b.period === "monthly" && b.account_id && (accountId === "all" || b.account_id === accountId) && format(parseISO(b.start_date), "yyyy-MM") <= monthKey);
   const latest = new Map<string, Budget>();
   for (const budget of eligible) {
-    const key = `${budget.account_id}|${budget.category_id ?? "overall"}`;
+    const key = budgetKey(budget);
     const existing = latest.get(key);
     if (!existing || budget.start_date > existing.start_date || (budget.start_date === existing.start_date && budget.id > existing.id)) latest.set(key, budget);
   }

@@ -33,26 +33,19 @@ export function calculateBudgetProgress(budget: Budget, txs: Transaction[], cate
   return { budget, categoryName: cat?.name ?? "Overall budget", icon: cat?.icon ?? "wallet", spent, remaining: budgetAmount - spent, percent: budgetAmount > 0 ? (spent / budgetAmount) * 100 : 0, state: status(spent, budgetAmount), projected, projectedState: status(projected, budgetAmount), rangeLabel: range.label };
 }
 
-function periodStart(period: Budget["period"], reference: Date) {
-  return period === "weekly" ? startOfWeek(reference, { weekStartsOn: 1 }) : startOfMonth(reference);
-}
-
 function budgetKey(budget: Budget) {
   return `${budget.account_id}|${budget.category_id ?? "overall"}|${budget.period}`;
 }
 
 export function budgetProgressFixed(budgets: Budget[], txs: Transaction[], categories: Category[], accountId: string): BudgetProgress[] {
   const reference = new Date();
-  const currentPeriodStart = new Map<Budget["period"], Date>([
-    ["monthly", periodStart("monthly", reference)],
-    ["weekly", periodStart("weekly", reference)],
-  ]);
   const latest = new Map<string, Budget>();
 
   for (const budget of budgets) {
     if (!budget.account_id || (accountId !== "all" && budget.account_id !== accountId)) continue;
-    const effectiveStart = currentPeriodStart.get(budget.period)!;
-    if (parseISO(budget.start_date) > effectiveStart) continue;
+    // Future-dated versions should not affect the current period. A version
+    // created at any point in the current period is valid immediately.
+    if (parseISO(budget.start_date) > reference) continue;
     const key = budgetKey(budget);
     const existing = latest.get(key);
     if (!existing || budget.start_date > existing.start_date || (budget.start_date === existing.start_date && budget.id > existing.id)) {
@@ -60,9 +53,8 @@ export function budgetProgressFixed(budgets: Budget[], txs: Transaction[], categ
     }
   }
 
-  // Budget edits create a new effective version for the new period. Only the
-  // latest version is shown here, while monthlyBudgetReport can still select
-  // the correct historical version for each past month.
+  // Only the latest effective version is shown on the current Budgets page.
+  // Older versions remain in data so historical reports keep their original amounts.
   return [...latest.values()]
     .map((budget) => calculateBudgetProgress(budget, txs, categories, reference))
     .sort((a, b) => b.percent - a.percent);

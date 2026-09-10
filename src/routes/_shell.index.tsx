@@ -7,7 +7,8 @@ import { Progress } from "@/components/ui/progress";
 import { useAppData } from "@/lib/data";
 import { useAppState } from "@/lib/app-state";
 import { formatMoney } from "@/lib/format";
-import { budgetProgress, periodTransactions, totals } from "@/lib/finance";
+import { budgetProgressFixed } from "@/lib/budget-analysis";
+import { periodTransactions, totals } from "@/lib/finance";
 import type { Account, Transaction } from "@/lib/types";
 
 export const Route = createFileRoute("/_shell/")({
@@ -38,7 +39,7 @@ function Dashboard() {
   const scoped = periodTransactions(data.transactions, accountId, range);
   const t = totals(scoped);
   const balance = periodBalance(data.accounts, scoped, accountId);
-  const budgets = budgetProgress(data.budgets, data.transactions, data.categories, accountId);
+  const budgets = budgetProgressFixed(data.budgets, data.transactions, data.categories, accountId);
   const upcoming = data.recurring.filter((r) => r.is_active && (accountId === "all" || r.account_id === accountId)).slice(0, 3);
 
   return (
